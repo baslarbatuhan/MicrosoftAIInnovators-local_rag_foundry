@@ -1,0 +1,18 @@
+# Üretilen veri
+*.db
+
+# Python önbellek
+__pycache__/
+*.pyc
+
+# Sanal ortam (varsa)
+.venv/
+venv/
+
+# Kaynak PDF (telif hakkı belirsiz, repo'ya girmesin)
+*.pdf
+
+# IDE ayarları
+.vscode/
+
+*.md

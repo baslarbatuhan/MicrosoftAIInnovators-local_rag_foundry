@@ -1,0 +1,2 @@
+foundry-local-sdk
+# import: from foundry_local_sdk import FoundryLocalManager
