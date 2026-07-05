@@ -1,0 +1,33 @@
+document_index,question,answer,source_file
+0,What do keybullet kin drop?,Keybullet kin drop a key upon death.,bullet_kin.txt
+0,What kind of gun does the bandana bullet kin use?,The bandana bullet kin wields a machine pistol.,bullet_kin.txt
+1,What do the giants look like?,"One giant is burly, grey-skinned, and 20 feet tall. It wears heavy dark iron armour covered in metal torns. It is leaning against a chamber wall, carrying what looks to be two tower shields nearly as tall as itself, both bearing
+menacing spikes.
+
+The other giant  stands a tall giant in more mobile iron, clutching a dangerous-looking maul the size of Yasha, also leaning and looking disinterested.",dnd_underground_session.txt
+1,What happens on day 2?,"After a few miles of winding tunnel, you emerge in a smaller grotto of stalactites and stalagmites dripping with condensation. Unsure if the same underground river, or another water source, is nearby, you can see quite a bit of ground water does funnel down into this area.
+
+You encounter 2 ropers seeking the next burrowed entrance left by the Kryn.",dnd_underground_session.txt
+2,What were the requirements for the project?,"The tool had the following requirements:
+- Chatbot that you can ask questions and get answers in response (conversational memory is not required).
+- Information is taken from an unstructured text file.
+- It must be able to tell me if it doesn’t know the answer to my question.
+- Fast.
+- Efficient enough to run on my MacBook with other programs without any performance issues.
+- Locally run for privacy and to ensure it will always be free, runnable, and consistent.",stici_note_rag_blog.txt
+2,What data did was used to test the prototype?,Grace Hopper's Wikipedia page and Alan Turing's Wikipedia page were used to test the prototype.,stici_note_rag_blog.txt
+3,How do the data storage options compare?,"For fast start: use SQLite3 and ChromaDB (File-based) out-of-the-box - no install required.
+For speed + scale: use MongoDB (text collection) and Milvus (vector db) - install with Docker Compose
+For postgres: use Postgres for both text collection and vector DB - install with Docker Compose
+For mix-and-match: LLMWare supports 3 text collection databases (Mongo, Postgres, SQLite) and 10 vector databases (Milvus, PGVector-Postgres, Neo4j, Redis, Mongo-Atlas, Qdrant, Faiss, LanceDB, ChromaDB and Pinecone).",llmware_readme.txt
+3,When was UTF-8 support added for European languages?,UTF-8 support was added for European languages on Wednesday 3rd April in the v0.2.7 Update.,llmware_readme.txt
+4,How do I make a button?,"import marimo as mo
+
+button = mo.ui.run_button()
+button
+
+mo.stop(not button.value, ""Click 'run' to generate a random number"")
+
+import random
+random.randint(0, 1000).",marimo_recipes.txt
+4,When might I use caching?,"You might use caching when, for example, your notebook computes t-SNE, UMAP, or PyMDE embeddings.",marimo_recipes.txt

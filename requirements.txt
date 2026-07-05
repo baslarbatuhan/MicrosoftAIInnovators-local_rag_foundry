@@ -1,2 +1,7 @@
 foundry-local-sdk
 # import: from foundry_local_sdk import FoundryLocalManager
+
+# Sadece prepare_dataset.py için (Kaggle'dan bilgi tabanı dataset'ini indirmek üzere)
+kagglehub
+kagglesdk==0.1.28
+

@@ -1,10 +1,11 @@
 import json
+import os
 import sqlite3
 
 from foundry_local_sdk import Configuration, FoundryLocalManager
 
 EMBEDDING_MODEL_ALIAS = "qwen3-embedding-0.6b"
-DB_PATH = "rag_demo.db"
+DB_PATH = "data/rag_demo.db"
 
 SENTENCES = [
     "Foundry Local, LLM'leri cihaz üzerinde çalıştırmayı sağlar.",
@@ -47,6 +48,7 @@ def main():
     model.load()
     embed_client = model.get_embedding_client()
 
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     create_schema(conn)
 
