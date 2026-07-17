@@ -1,76 +1,75 @@
 # Local RAG Q&A Assistant
 
-Tamamen **çevrimdışı** çalışan, belge tabanlı soru-cevap asistanı. Microsoft **Foundry Local**
-ile LLM'i cihaz üzerinde çalıştırır; **RAG** (Retrieval-Augmented Generation) deseniyle
-cevaplarını yerel bilgi tabanındaki belgelere dayandırır — internet bağlantısı, bulut hesabı
-veya GPU gerektirmez.
+A fully **offline**, document-grounded question-answering assistant. It runs the LLM
+on-device with Microsoft **Foundry Local** and uses the **RAG** (Retrieval-Augmented
+Generation) pattern to ground every answer in a local knowledge base — no internet
+connection, cloud account, or GPU required.
 
-> Bu proje, Microsoft Tech Community'deki
-> [Building Your First Local RAG Application with Foundry Local](https://techcommunity.microsoft.com/blog/azuredevcommunityblog/building-your-first-local-rag-application-with-foundry-local/4501968)
-> rehberinden ilham alan bir yaz okulu projesi olarak geliştirilmiştir.
+> Built as a summer school project, inspired by the Microsoft Tech Community guide
+> [Building Your First Local RAG Application with Foundry Local](https://techcommunity.microsoft.com/blog/azuredevcommunityblog/building-your-first-local-rag-application-with-foundry-local/4501968).
 
-## Özellikler
+## Features
 
-- 🔌 **%100 yerel:** Model indirme sonrası hiçbir ağ çağrısı yok
-- 📚 **Kaynak gösterimi:** Her cevabın hangi belgeden geldiği deterministik olarak raporlanır
-- 🚫 **Uydurma yok:** Cevap bilgi tabanında yoksa model tahmin etmez, "I don't have that information" der (değerlendirmede 10/10 doğru reddetme)
-- 🔍 **Şeffaf retrieval:** `--verbose` bayrağıyla modelin gördüğü chunk'lar skorlarıyla izlenebilir
+- 🔌 **100% local:** Zero network calls after the initial model download
+- 📚 **Source attribution:** Every answer reports which document it came from, derived deterministically from retrieval
+- 🚫 **No hallucinations:** If the answer is not in the knowledge base, the model says "I don't have that information" instead of guessing (10/10 correct refusals in evaluation)
+- 🔍 **Transparent retrieval:** The `--verbose` flag shows exactly which chunks the model saw, with similarity scores
 
-## Mimari
+## Architecture
 
 ```
-Kullanıcı Sorusu (CLI)
+User Question (CLI)
       │
       ▼
 answer_query()  ──►  get_top_chunks()  ──►  SQLite (chunk + embedding)
       │                    │ cosine similarity, top-3
-      │              qwen3-embedding-0.6b (soru embedding'i)
+      │              qwen3-embedding-0.6b (query embedding)
       ▼
-phi-3.5-mini  ◄── system prompt + [Source] etiketli bağlam + soru
+phi-3.5-mini  ◄── system prompt + [Source]-tagged context + question
       │
       ▼
-Cevap + Kaynak listesi
+Answer + Source list
 ```
 
-| Bileşen | Teknoloji |
+| Component | Technology |
 |---|---|
 | LLM runtime | Microsoft Foundry Local (in-process SDK, v1.2.3) |
-| Chat modeli | `phi-3.5-mini` (3.8B, `temperature=0`, `max_tokens=256`) |
-| Embedding modeli | `qwen3-embedding-0.6b` (1024 boyutlu vektörler) |
-| Vektör deposu | SQLite (JSON-serileştirilmiş embedding'ler, brute-force cosine similarity) |
-| Bilgi tabanı | 5 belge / 114 chunk (paragraf bazlı + overlap, max 800 karakter) |
+| Chat model | `phi-3.5-mini` (3.8B, `temperature=0`, `max_tokens=256`) |
+| Embedding model | `qwen3-embedding-0.6b` (1024-dimensional vectors) |
+| Vector store | SQLite (JSON-serialized embeddings, brute-force cosine similarity) |
+| Knowledge base | 5 documents / 114 chunks (paragraph-based + overlap, max 800 chars) |
 
-## Kurulum
+## Setup
 
-**Gereksinimler:** Windows, Python 3.10+ (3.14 ile test edildi)
+**Requirements:** Windows, Python 3.10+ (tested with 3.14)
 
 ```powershell
-# 1. Foundry Local'ı kur
+# 1. Install Foundry Local
 winget install Microsoft.FoundryLocal --accept-source-agreements
-foundry --version   # doğrulama
+foundry --version   # verify
 
-# 2. Python bağımlılıklarını kur
-#    (birden fazla Python varsa "pip install" yerine mutlaka "python -m pip" kullan)
+# 2. Install Python dependencies
+#    (if you have multiple Python installs, always use "python -m pip", not bare "pip")
 python -m pip install -r requirements.txt
 
-# 3. Bilgi tabanını hazırla (Kaggle'dan 5 belge + test soru setlerini indirir)
+# 3. Prepare the knowledge base (downloads 5 documents + test question sets from Kaggle)
 python prepare_dataset.py
 
-# 4. Belgeleri chunk'la, embed et, veritabanına yaz (data/rag.db)
+# 4. Chunk, embed, and write the documents to the database (data/rag.db)
 python ingest.py
 ```
 
-> İlk çalıştırmada modeller otomatik indirilir (`qwen3-embedding-0.6b` ~600 MB,
-> `phi-3.5-mini` ~2 GB) ve cache'lenir — sonraki çalıştırmalar çevrimdışıdır.
+> On first run the models are downloaded automatically (`qwen3-embedding-0.6b` ~600 MB,
+> `phi-3.5-mini` ~2 GB) and cached — subsequent runs are fully offline.
 
-## Kullanım
+## Usage
 
 ```powershell
-python main.py            # normal mod
-python main.py --verbose  # retrieval'ın getirdiği chunk'ları skorlarıyla gösterir
+python main.py            # normal mode
+python main.py --verbose  # also shows retrieved chunks with similarity scores
 ```
 
-Örnek oturum (bilgi tabanı İngilizce olduğu için sorular İngilizce sorulmalı):
+Example session (the knowledge base is in English, so questions should be asked in English):
 
 ```
 Soru: What do keybullet kin drop?
@@ -83,69 +82,74 @@ Soru: How much health does the Mutant Bullet Kin have?
 Cevap: I don't have that information.
 ```
 
-Çıkmak için `exit`, `quit` veya `çık`.
+Type `exit`, `quit`, or `çık` to quit.
 
-**Kendi belgelerinizi kullanmak için:** `documents/` klasörüne `.txt` dosyalarınızı koyup
-`python ingest.py` çalıştırın (ilk satır `Kaynak: <url>` formatındaysa kaynak olarak ayrıştırılır).
+**To use your own documents:** drop your `.txt` files into `documents/` and run
+`python ingest.py` (if the first line is in the `Kaynak: <url>` format, it is parsed
+as the source URL).
 
-## Değerlendirme
+## Evaluation
 
-`python evaluate.py` — `eval/` klasöründeki 20 soruyu (10 cevaplanabilir + 10 cevaplanamaz)
-çalıştırır, metrikleri konsola ve `eval/eval_results.csv`'ye yazar.
+`python evaluate.py` — runs the 20 questions in `eval/` (10 answerable + 10 unanswerable),
+prints the metrics, and writes the details to `eval/eval_results.csv`.
 
-Nihai sonuçlar (deterministik, `temperature=0`):
+Final results (deterministic, `temperature=0`):
 
-| Metrik | Sonuç |
+| Metric | Result |
 |---|---|
-| Retrieval isabeti | 9/10 (%90)* |
-| Cevaplama oranı | 8/10 (%80) |
-| Doğru reddetme (uydurma yok) | **10/10 (%100)** |
-| Yanıt süresi | ort. 13.0 s (CPU) |
+| Retrieval hit rate | 9/10 (90%)* |
+| Answer rate | 8/10 (80%) |
+| Correct refusals (no hallucination) | **10/10 (100%)** |
+| Response time | avg. 13.0 s (CPU) |
 
-\* Tek kaçırılan sorunun cevap pasajı dataset'teki belge metninde hiç yer almıyor
-(dataset kusuru) — sistemin bu soruyu reddetmesi doğru davranış.
+\* The answer passage for the single missed question is not present in the dataset's
+document text at all (a dataset flaw) — refusing that question is the correct behavior.
 
-## Proje Yapısı
+## Project Structure
 
 ```
-main.py              → giriş noktası: answer_query() + CLI döngüsü
-ingest.py            → belgeleri chunk'la + embed et + SQLite'a yaz
-retrieval.py         → get_top_chunks(): cosine similarity ile top-k chunk
-evaluate.py          → 20 soruluk otomatik değerlendirme + metrik raporu
-prepare_dataset.py   → Kaggle dataset'inden bilgi tabanı ve test sorularını hazırlar
-documents/           → bilgi tabanı (.txt belgeler)
-eval/                → test soru setleri + değerlendirme sonuçları
-exercises/           → geliştirme sürecindeki kavramsal demo scriptleri (pipeline'ın parçası değil)
-data/                → üretilen veritabanları (ingest.py otomatik oluşturur)
+main.py              → entry point: answer_query() + CLI loop
+ingest.py            → chunk + embed documents, write to SQLite
+retrieval.py         → get_top_chunks(): top-k chunks via cosine similarity
+evaluate.py          → automated 20-question evaluation + metric report
+prepare_dataset.py   → builds the knowledge base and test sets from the Kaggle dataset
+documents/           → knowledge base (.txt documents)
+eval/                → test question sets + evaluation results
+exercises/           → conceptual demo scripts from the learning phase (not part of the pipeline)
+data/                → generated databases (created automatically by ingest.py)
 ```
 
-## Bilinen Sınırlamalar
+## Known Limitations
 
-- **Gecikme:** CPU üzerinde soru başına ~13 sn (3.8B model gerçeği). Hedef donanımda GPU
-  varyantı veya daha küçük model seçilerek düşürülebilir.
-- **Küçük model okuma sınırı:** Model nadiren bağlamdaki *benzer* bir pasajı sorulanla
-  karıştırabiliyor (ör. iki farklı changelog satırını karıştırdığı bir vaka gözlendi).
-  Uydurma değildir — cevap her zaman bağlamdan gelir — ama doğruluğu garanti etmez.
-- **Fazla temkinlilik:** Sıkı grounding, sınırdaki 1-2 cevaplanabilir soruyu da
-  reddettirebiliyor (precision/recall takası — uydurmasızlık lehine bilinçli tercih).
-- **Dil:** Bilgi tabanı İngilizce olduğu için prompt ve sorular İngilizce'dir. Türkçe belge
-  koyarsanız system prompt'un da Türkçeleştirilmesi gerekir (`main.py` → `SYSTEM_PROMPT`).
-- **Ölçek:** Brute-force cosine similarity küçük koleksiyonlar için yeterlidir; binlerce
-  belgede özel vektör veritabanına (ChromaDB, Qdrant vb.) geçilmelidir.
+- **Latency:** ~13 s per question on CPU (the reality of a 3.8B model). Could be reduced
+  with a GPU variant or a smaller model on capable hardware.
+- **Small-model reading limits:** The model can occasionally confuse a *similar* passage
+  in the context with the one being asked about (one such case was observed with two
+  similar changelog entries). This is not hallucination — answers always come from the
+  context — but correctness is not guaranteed.
+- **Over-caution:** Strict grounding can make the model refuse 1-2 borderline answerable
+  questions (a precision/recall trade-off — deliberately chosen in favor of zero hallucination).
+- **Language:** The knowledge base is in English, so the prompt and questions are English.
+  If you add Turkish documents, the system prompt should be translated as well
+  (`main.py` → `SYSTEM_PROMPT`).
+- **Scale:** Brute-force cosine similarity is fine for small collections; thousands of
+  documents would call for a dedicated vector database (ChromaDB, Qdrant, etc.).
 
-## Öğrenilen Dersler
+## Lessons Learned
 
-1. **Dil tutarlılığı kritik:** Türkçe system prompt + İngilizce içerik kombinasyonu modeli
-   şaşırtıyordu; prompt'u İngilizceye çevirmek doğru reddetme oranını %30'dan %100'e çıkardı.
-2. **Chunk sınırları retrieval kalitesini belirliyor:** Başlık/tarih satırlarının içerikten
-   ayrı chunk'a düşmesi cevaplanabilir soruları kaybettiriyordu; chunk overlap bunu çözdü.
-3. **Daha fazla bağlam ≠ daha iyi:** `top_k`'yı 3'ten 5'e çıkarmak cevaplamayı artırdı ama
-   uydurmayı geri getirdi ve gecikmeyi 2.4× yaptı — geri alındı.
-4. **Ölçmeden bilemezsin:** "Çalışıyor gibi görünen" ilk sistemde 4 gizli sorun vardı;
-   hepsi ancak sistematik değerlendirmeyle (7 tur ölç→teşhis→düzelt) ortaya çıktı.
+1. **Language consistency is critical:** A Turkish system prompt combined with English
+   content confused the model; switching the prompt to English raised correct refusals
+   from 30% to 100%.
+2. **Chunk boundaries make or break retrieval:** Heading/date lines landing in a different
+   chunk than their content lost us answerable questions; chunk overlap fixed it.
+3. **More context ≠ better:** Raising `top_k` from 3 to 5 increased the answer rate but
+   brought hallucinations back and made latency 2.4× worse — it was reverted.
+4. **You can't know without measuring:** The first "seemingly working" system hid four
+   separate issues; all of them surfaced only through systematic evaluation
+   (7 measure→diagnose→fix rounds).
 
-## Kaynaklar
+## References
 
-- [Microsoft Foundry Local dokümantasyonu](https://learn.microsoft.com/en-us/azure/ai-foundry/foundry-local/)
+- [Microsoft Foundry Local documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/foundry-local/)
 - [Building Your First Local RAG Application with Foundry Local](https://techcommunity.microsoft.com/blog/azuredevcommunityblog/building-your-first-local-rag-application-with-foundry-local/4501968) (Tech Community)
-- Bilgi tabanı ve test soruları: [single-topic-rag-evaluation-dataset](https://www.kaggle.com/datasets/samuelmatsuoharris/single-topic-rag-evaluation-dataset) (Kaggle)
+- Knowledge base and test questions: [single-topic-rag-evaluation-dataset](https://www.kaggle.com/datasets/samuelmatsuoharris/single-topic-rag-evaluation-dataset) (Kaggle)
