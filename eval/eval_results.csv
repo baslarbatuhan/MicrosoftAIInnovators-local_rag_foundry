@@ -1,0 +1,27 @@
+type,question,expected_source,retrieved_sources,retrieval_hit,refused,latency_s,answer
+answerable,What do keybullet kin drop?,bullet_kin.txt,bullet_kin.txt,True,False,12.41,Keybullet Kin drop keys upon death.
+answerable,What kind of gun does the bandana bullet kin use?,bullet_kin.txt,bullet_kin.txt,True,False,13.31,Bandana Bullet Kin wield Machine Pistols.
+answerable,What do the giants look like?,dnd_underground_session.txt,,False,True,11.28,I don't have that information.
+answerable,What happens on day 2?,dnd_underground_session.txt,dnd_underground_session.txt|stici_note_rag_blog.txt|llmware_readme.txt,True,False,15.18,"On day 2, after traveling a few miles of winding tunnel, you emerge in a smaller grotto with stalactites and stalagmites. There is uncertainty about whether the same underground river or another water source is nearby, as groundwater is seen funneling into this area. Additionally, there are encounters with roopers, marked as ""Ropers x 2"" encounters."
+answerable,What were the requirements for the project?,stici_note_rag_blog.txt,stici_note_rag_blog.txt,True,False,11.83,"The project required a chatbot that can ask questions and receive answers from an unstructured text file. It must indicate when it doesn't know an answer and perform efficiently enough to run on a MacBook without performance issues. The project was also intended to be locally run for privacy, ensuring it remains free, runnable, and consistent. Conversational memory was not a required feature initially, but it could be added later if needed."
+answerable,What data did was used to test the prototype?,stici_note_rag_blog.txt,stici_note_rag_blog.txt,True,False,11.14,"The prototype was tested using Wikipedia pages. Specifically, questions about Grace Hopper and Alan Turing were generated based on their respective Wikipedia pages, which were used in two versions of the prototype."
+answerable,How do the data storage options compare?,llmware_readme.txt,,True,True,13.94,"The context provided discusses various models, operating systems, and databases but does not directly compare the data storage options. Therefore, I do not have that information."
+answerable,When was UTF-8 support added for European languages?,llmware_readme.txt,llmware_readme.txt,True,False,13.22,"Updated encodings to 'utf-8-sig' to better handle txt/csv files with bom on Friday, February 16."
+answerable,How do I make a button?,marimo_recipes.txt,marimo_recipes.txt,True,False,20.06,"To make a button using the provided context, you can use the `mo.ui.button` function from the `marimo` package. Here's an example of how to create a button with an initial value of 0 and increment it on every click:
+
+```python
+button = mo.ui.button(value=0, on_click=lambda count: count + 1)
+```
+
+This code snippet creates a button with the initial value of 0, and defines a lambda function as the `on_click` argument, which increments the button's value by 1 every time it is clicked."
+answerable,When might I use caching?,marimo_recipes.txt,marimo_recipes.txt|stici_note_rag_blog.txt,True,False,14.84,"You might use caching when you need to store and quickly retrieve the results of expensive computations, such as generating t-SNE, UMAP, or PyMDE embeddings, especially when these computations are exposed as UI elements and you want to speed up your notebook by not recalculating the same values multiple times. This is done by using functools to cache function outputs given inputs, as shown in the marimo_recipes.txt source."
+unanswerable,How much health does the Mutant Bullet Kin have?,,,,True,13.69,The context does not provide a specific number for the health of the Mutant Bullet Kin.
+unanswerable,Where can bishops be found?,,,,True,11.82,I don't have that information.
+unanswerable,What happened on day 10?,,,,True,10.56,I don't have that information.
+unanswerable,What did the goblins say?,,,,True,10.18,I don't have that information.
+unanswerable,Why was the H100 GPU chosen for computation?,,,,True,11.44,I don't have that information.
+unanswerable,Which masked language model was chosen for the AI?,,,,True,14.84,The context does not provide specific information about which masked language model was chosen for the AI. The answer cannot be determined from the given context.
+unanswerable,When was GPT 4 made available,,,,True,12.71,I don't have that information.
+unanswerable,What Tensorflow features are supported?,,,,True,13.81,"The provided context does not contain information about Tensorflow features. The details given pertain to Pytorch, Transformers dependencies, and various updates and improvements to a Model class handling and API endpoints. Therefore, I don't have that information."
+unanswerable,How can I create graphs?,,,,True,12.28,The provided context does not include information on creating graphs. I don't have that information.
+unanswerable,What is the name of the Java version of marimo?,,,,True,11.35,I don't have that information.

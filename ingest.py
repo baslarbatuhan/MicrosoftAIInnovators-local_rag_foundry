@@ -49,20 +49,32 @@ def read_document(path: str) -> tuple[str, str]:
 
 def chunk_text(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
     """Metni boş satırlara göre paragraflara ayırır, ardışık paragrafları
-    max_chars'ı aşmayacak şekilde birleştirerek chunk'lar oluşturur."""
+    max_chars'ı aşmayacak şekilde birleştirerek chunk'lar oluşturur.
+
+    Overlap: yeni chunk, önceki chunk'ın SON paragrafıyla başlar. Hafta 5
+    değerlendirmesinde başlık/tarih satırlarının ("Required features:",
+    "Wednesday, April 3 - v0.2.7 Update") ait oldukları içerikten ayrı
+    chunk'lara düştüğü görüldü — overlap bu sınır kopmalarını yumuşatıyor.
+    """
     paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 
     chunks: list[str] = []
-    current = ""
+    current: list[str] = []
+
+    def current_len(parts: list[str]) -> int:
+        return sum(len(p) for p in parts) + 2 * max(len(parts) - 1, 0)
+
     for para in paragraphs:
-        candidate = f"{current}\n\n{para}" if current else para
-        if len(candidate) > max_chars and current:
-            chunks.append(current)
-            current = para
+        if current and current_len(current) + 2 + len(para) > max_chars:
+            chunks.append("\n\n".join(current))
+            # Overlap: önceki chunk'ın son paragrafını yeni chunk'a taşı
+            # (sığıyorsa — tek başına max_chars'ı aşan dev paragrafları taşıma)
+            last = current[-1]
+            current = [last, para] if len(last) + 2 + len(para) <= max_chars else [para]
         else:
-            current = candidate
+            current.append(para)
     if current:
-        chunks.append(current)
+        chunks.append("\n\n".join(current))
 
     return chunks
 

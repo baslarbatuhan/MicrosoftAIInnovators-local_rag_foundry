@@ -39,6 +39,20 @@ def get_all_documents(conn: sqlite3.Connection) -> list[tuple[int, str, list[flo
     return [(row_id, content, json.loads(embedding_json)) for row_id, content, embedding_json in rows]
 
 
+def get_document_by_id(conn: sqlite3.Connection, doc_id: int) -> tuple[int, str] | None:
+    """PDF'in SQL sandbox egzersizi: id ile tek kayıt getir."""
+    return conn.execute(
+        "SELECT id, content FROM documents WHERE id = ?", (doc_id,)
+    ).fetchone()
+
+
+def find_documents_by_keyword(conn: sqlite3.Connection, keyword: str) -> list[tuple[int, str]]:
+    """PDF'in SQL sandbox egzersizi: içerikte keyword geçen kayıtları filtrele."""
+    return conn.execute(
+        "SELECT id, content FROM documents WHERE content LIKE ?", (f"%{keyword}%",)
+    ).fetchall()
+
+
 def main():
     config = Configuration(app_name="LocalRagAssistant")
     FoundryLocalManager.initialize(config)
@@ -66,6 +80,13 @@ def main():
     print("\n--- Veritabanındaki kayıtlar ---")
     for row_id, content, embedding in get_all_documents(conn):
         print(f"id={row_id}  vektör_boyutu={len(embedding)}  içerik={content}")
+
+    print("\n--- id ile sorgu (id=2) ---")
+    print(get_document_by_id(conn, 2))
+
+    print("\n--- keyword ile filtre ('SQLite') ---")
+    for row in find_documents_by_keyword(conn, "SQLite"):
+        print(row)
 
     conn.close()
 
