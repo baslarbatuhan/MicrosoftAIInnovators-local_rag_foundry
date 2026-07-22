@@ -1,0 +1,1004 @@
+Kaynak: https://github.com/MicrosoftDocs/azure-ai-docs/blob/main/articles/foundry-local/reference/reference-sdk-legacy.md
+
+# Foundry Local Legacy SDK Reference
+(Doküman tarihi: 06/15/2026)
+
+# Foundry Local Legacy SDK reference
+
+> [!WARNING]
+> This reference applies to earlier versions of the Foundry Local SDK that depend on the Foundry Local CLI for service management. 
+>
+> **For new development, use the [current SDK reference](./reference-sdk-current.md)**.
+>
+> The following table shows the SDK versions where there was a dependency on the CLI:
+>
+> | Language | Package | CLI-dependent versions |
+> |---|---|---|
+> | C# | Microsoft.AI.Foundry.Local | 0.3.0 and earlier | 
+> | JavaScript | foundry-local-sdk | 0.5.0 and earlier |
+> | Python | foundry-local-sdk | 0.5.1 and earlier |
+> | Rust | foundry-local / foundry-local-sdk | 0.x |
+>
+> **Support for CLI-dependent versions ends 31 August 2026.**
+
+<!-- markdownlint-disable MD044 -->
+
+## Python SDK Reference
+
+### Prerequisites
+
+- Install Foundry Local CLI and ensure the `foundry` command is available on your `PATH`.
+- Use Python 3.9 or later.
+
+### Installation
+
+Install the Python package:
+
+```bash
+pip install foundry-local-sdk==0.5.1
+```
+
+### Quickstart
+
+Use this snippet to verify that the SDK can start the service and reach the local catalog.
+
+```python
+from foundry_local import FoundryLocalManager
+
+manager = FoundryLocalManager()
+manager.start_service()
+
+catalog = manager.list_catalog_models()
+print(f"Catalog models available: {len(catalog)}")
+```
+
+This example prints a non-zero number when the service is running and the catalog is available.
+
+References:
+
+- [Integrate with inference SDKs](../../how-to/how-to-integrate-with-inference-sdks.md)
+
+### FoundryLocalManager Class
+
+The `FoundryLocalManager` class provides methods to manage models, cache, and the Foundry Local service.
+
+#### Initialization
+
+```python
+from foundry_local import FoundryLocalManager
+
+# Initialize and optionally bootstrap with a model
+manager = FoundryLocalManager(alias_or_model_id=None, bootstrap=True)
+```
+
+- `alias_or_model_id`: (optional) Alias or Model ID to download and load at startup.
+- `bootstrap`: (default True) If True, starts the service if not running and loads the model if provided.
+
+### A note on aliases
+
+Many methods outlined in this reference have an `alias_or_model_id` parameter in the signature. You can pass into the method either an **alias** or **model ID** as a value. Using an alias will:
+
+- Select the _best model_ for the available hardware. For example, if a Nvidia CUDA GPU is available, Foundry Local selects the CUDA model. If a supported NPU is available, Foundry Local selects the NPU model.
+- Allow you to use a shorter name without needing to remember the model ID.
+
+> [!TIP]
+> We recommend passing into the `alias_or_model_id` parameter an **alias** because when you deploy your application, Foundry Local acquires the best model for the end user's machine at run-time.
+
+> [!NOTE]
+> If you have an Intel NPU on Windows, ensure you have installed the [Intel NPU driver](https://www.intel.com/content/www/us/en/download/794734/intel-npu-driver-windows.html) for optimal NPU acceleration.
+
+### Service Management
+
+| Method                 | Signature          | Description                                     |
+| ---------------------- | ------------------ | ----------------------------------------------- |
+| `is_service_running()` | `() -> bool`       | Checks if the Foundry Local service is running. |
+| `start_service()`      | `() -> None`       | Starts the Foundry Local service.               |
+| `service_uri`          | `@property -> str` | Returns the service URI.                        |
+| `endpoint`             | `@property -> str` | Returns the service endpoint.                   |
+| `api_key`              | `@property -> str` | Returns the API key (from env or default).      |
+
+### Catalog Management
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `list_catalog_models()` | `() -> list[FoundryModelInfo]` | Lists all available models in the catalog. |
+| `refresh_catalog()` | `() -> None` | Refreshes the model catalog. |
+| `get_model_info()` | `(alias_or_model_id: str, raise_on_not_found=False) -> FoundryModelInfo \| None` | Gets model info by alias or ID. |
+
+### Cache Management
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `get_cache_location()` | `() -> str` | Returns the model cache directory path. |
+| `list_cached_models()` | `() -> list[FoundryModelInfo]` | Lists models downloaded to the local cache. |
+
+### Model Management
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `download_model()` | `(alias_or_model_id: str, token: str = None, force: bool = False) -> FoundryModelInfo` | Downloads a model to the local cache. |
+| `load_model()` | `(alias_or_model_id: str, ttl: int = 600) -> FoundryModelInfo` | Loads a model into the inference server. |
+| `unload_model()` | `(alias_or_model_id: str, force: bool = False) -> None` | Unloads a model from the inference server. |
+| `list_loaded_models()` | `() -> list[FoundryModelInfo]` | Lists all models currently loaded in the service. |
+
+### FoundryModelInfo
+
+The methods `list_catalog_models()`, `list_cached_models()`, and `list_loaded_models()` return a list of `FoundryModelInfo` objects. You can use the information contained in this object to further refine the list. Or get the information for a model directly by calling the `get_model_info(alias_or_model_id)` method.
+
+These objects contain the following fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `alias` | `str` | Alias of the model. |
+| `id` | `str` | Unique identifier of the model. |
+| `version` | `str` | Version of the model. |
+| `execution_provider` | `str` | The accelerator ([execution provider](#execution-providers)) used to run the model. |
+| `device_type` | `DeviceType` | Device type of the model: CPU, GPU, NPU. |
+| `uri` | `str` | URI of the model. |
+| `file_size_mb` | `int` | Size of the model on disk in MB. |
+| `supports_tool_calling` | `bool` | Whether the model supports tool calling. |
+| `prompt_template` | `dict \| None` | Prompt template for the model. |
+| `provider` | `str` | Provider of the model (where the model is published). |
+| `publisher` | `str` | Publisher of the model (who published the model). |
+| `license` | `str` | The name of the license of the model. |
+| `task` | `str` | Task of the model. One of `chat-completions` or `automatic-speech-recognition`. |
+| `ep_override` | `str \| None` | Override for the execution provider, if different from the model's default. |
+
+### Execution Providers
+
+One of:
+- `CPUExecutionProvider` - CPU-based execution
+- `CUDAExecutionProvider` - NVIDIA CUDA GPU execution
+- `WebGpuExecutionProvider` - WebGPU execution
+- `QNNExecutionProvider` - Qualcomm Neural Network execution (NPU)
+- `OpenVINOExecutionProvider` - Intel OpenVINO execution
+- `NvTensorRTRTXExecutionProvider` - NVIDIA TensorRT execution
+- `VitisAIExecutionProvider` - AMD Vitis AI execution
+
+## Example Usage
+
+The following code demonstrates how to use the `FoundryLocalManager` class to manage models and interact with the Foundry Local service.
+
+```python
+from foundry_local import FoundryLocalManager
+
+# By using an alias, the most suitable model will be selected
+# to your end-user's device.
+alias = "qwen2.5-0.5b"
+
+# Create a FoundryLocalManager instance. This will start the Foundry.
+manager = FoundryLocalManager()
+
+# List available models in the catalog
+catalog = manager.list_catalog_models()
+print(f"Available models in the catalog: {catalog}")
+
+# Download and load a model
+model_info = manager.download_model(alias)
+model_info = manager.load_model(alias)
+print(f"Model info: {model_info}")
+
+# List models in cache
+local_models = manager.list_cached_models()
+print(f"Models in cache: {local_models}")
+
+# List loaded models
+loaded = manager.list_loaded_models()
+print(f"Models running in the service: {loaded}")
+
+# Unload a model
+manager.unload_model(alias)
+```
+
+This example lists models, downloads and loads one model, and then unloads it.
+
+References:
+
+- [Integrate with inference SDKs](../../how-to/how-to-integrate-with-inference-sdks.md)
+
+### Integrate with OpenAI SDK
+
+Install the OpenAI package:
+
+```bash
+pip install openai
+```
+
+The following code demonstrates how to integrate the `FoundryLocalManager` with the OpenAI SDK to interact with a local model.
+
+```python
+import openai
+from foundry_local import FoundryLocalManager
+
+# By using an alias, the most suitable model will be downloaded
+# to your end-user's device.
+alias = "qwen2.5-0.5b"
+
+# Create a FoundryLocalManager instance. This will start the Foundry
+# Local service if it is not already running and load the specified model.
+manager = FoundryLocalManager(alias)
+
+# The remaining code uses the OpenAI Python SDK to interact with the local model.
+
+# Configure the client to use the local Foundry service
+client = openai.OpenAI(
+    base_url=manager.endpoint,
+    api_key=manager.api_key  # API key is not required for local usage
+)
+
+# Set the model to use and generate a streaming response
+stream = client.chat.completions.create(
+    model=manager.get_model_info(alias).id,
+    messages=[{"role": "user", "content": "Why is the sky blue?"}],
+    stream=True
+)
+
+# Print the streaming response
+for chunk in stream:
+    if chunk.choices[0].delta.content is not None:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+```
+
+This example streams a chat completion response from the local model.
+
+References:
+
+- [Integrate with inference SDKs](../../how-to/how-to-integrate-with-inference-sdks.md)
+
+## JavaScript SDK Reference
+
+### Prerequisites
+
+- Install Foundry Local CLI and ensure the `foundry` command is available on your `PATH`.
+
+### Installation
+
+Install the package from npm:
+
+```bash
+npm install foundry-local-sdk@0.5.0
+```
+
+### Quickstart
+
+Use this snippet to verify that the SDK can start the service and reach the local catalog.
+
+```js
+import { FoundryLocalManager } from "foundry-local-sdk";
+
+const manager = new FoundryLocalManager();
+
+await manager.startService();
+const catalogModels = await manager.listCatalogModels();
+
+console.log(`Catalog models available: ${catalogModels.length}`);
+```
+
+This example prints a non-zero number when the service is running and the catalog is available.
+
+References:
+
+- [Integrate with inference SDKs](../../how-to/how-to-integrate-with-inference-sdks.md)
+
+### FoundryLocalManager Class
+
+The `FoundryLocalManager` class lets you manage models, control the cache, and interact with the Foundry Local service in both browser and Node.js environments.
+
+#### Initialization
+
+```js
+import { FoundryLocalManager } from "foundry-local-sdk";
+
+const foundryLocalManager = new FoundryLocalManager();
+```
+
+Available options:
+
+- `host`: Base URL of the Foundry Local service
+- `fetch`: (optional) Custom fetch implementation for environments like Node.js
+
+### A note on aliases
+
+Many methods outlined in this reference have an `aliasOrModelId` parameter in the signature. You can pass into the method either an **alias** or **model ID** as a value. Using an alias will:
+
+- Select the _best model_ for the available hardware. For example, if a Nvidia CUDA GPU is available, Foundry Local selects the CUDA model. If a supported NPU is available, Foundry Local selects the NPU model.
+- Allow you to use a shorter name without needing to remember the model ID.
+
+> [!TIP]
+> We recommend passing into the `aliasOrModelId` parameter an **alias** because when you deploy your application, Foundry Local acquires the best model for the end user's machine at run-time.
+
+> [!NOTE]
+> If you have an Intel NPU on Windows, ensure you have installed the [Intel NPU driver](https://www.intel.com/content/www/us/en/download/794734/intel-npu-driver-windows.html) for optimal NPU acceleration.
+
+### Service Management
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `init()` | `(aliasOrModelId?: string) => Promise<FoundryModelInfo \| void>` | Initializes the SDK and optionally loads a model. |
+| `isServiceRunning()` | `() => Promise<boolean>` | Checks if the Foundry Local service is running. |
+| `startService()` | `() => Promise<void>` | Starts the Foundry Local service. |
+| `serviceUrl` | `string` | The base URL of the Foundry Local service. |
+| `endpoint` | `string` | The API endpoint (`serviceUrl` + `/v1`). |
+| `apiKey` | `string` | The API key (none). |
+
+### Catalog Management
+
+| Method                | Signature                                                                                | Description                                |
+| --------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `listCatalogModels()` | `() => Promise<FoundryModelInfo[]>`                                                      | Lists all available models in the catalog. |
+| `refreshCatalog()`    | `() => Promise<void>`                                                                    | Refreshes the model catalog.               |
+| `getModelInfo()`      | `(aliasOrModelId: string, throwOnNotFound = false) => Promise<FoundryModelInfo \| null>` | Gets model info by alias or ID.            |
+
+### Cache Management
+
+| Method               | Signature                           | Description                                 |
+| -------------------- | ----------------------------------- | ------------------------------------------- |
+| `getCacheLocation()` | `() => Promise<string>`             | Returns the model cache directory path.     |
+| `listCachedModels()` | `() => Promise<FoundryModelInfo[]>` | Lists models downloaded to the local cache. |
+
+### Model Management
+
+| Method               | Signature                                                                                           | Description                                       |
+| -------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `downloadModel()`    | `(aliasOrModelId: string, token?: string, force = false, onProgress?) => Promise<FoundryModelInfo>` | Downloads a model to the local cache.             |
+| `loadModel()`        | `(aliasOrModelId: string, ttl = 600) => Promise<FoundryModelInfo>`                                  | Loads a model into the inference server.          |
+| `unloadModel()`      | `(aliasOrModelId: string, force = false) => Promise<void>`                                          | Unloads a model from the inference server.        |
+| `listLoadedModels()` | `() => Promise<FoundryModelInfo[]>`                                                                 | Lists all models currently loaded in the service. |
+
+## Example Usage
+
+The following code demonstrates how to use the `FoundryLocalManager` class to manage models and interact with the Foundry Local service.
+
+```js
+import { FoundryLocalManager } from "foundry-local-sdk";
+
+// By using an alias, the most suitable model will be downloaded
+// to your end-user's device.
+// TIP: You can find a list of available models by running the
+// following command in your terminal: `foundry model list`.
+const alias = "qwen2.5-0.5b";
+
+const manager = new FoundryLocalManager();
+
+// Initialize the SDK and optionally load a model
+const modelInfo = await manager.init(alias);
+console.log("Model Info:", modelInfo);
+
+// Check if the service is running
+const isRunning = await manager.isServiceRunning();
+console.log(`Service running: ${isRunning}`);
+
+// List available models in the catalog
+const catalog = await manager.listCatalogModels();
+
+// Download and load a model
+await manager.downloadModel(alias);
+await manager.loadModel(alias);
+
+// List models in cache
+const localModels = await manager.listCachedModels();
+
+// List loaded models
+const loaded = await manager.listLoadedModels();
+
+// Unload a model
+await manager.unloadModel(alias);
+```
+
+This example downloads and loads a model, then lists cached and loaded models.
+
+References:
+
+- [Integrate with inference SDKs](../../how-to/how-to-integrate-with-inference-sdks.md)
+
+## Integration with OpenAI Client
+
+Install the OpenAI package:
+
+```bash
+npm install openai
+```
+
+The following code demonstrates how to integrate the `FoundryLocalManager` with the OpenAI client to interact with a local model.
+
+```js
+import { OpenAI } from "openai";
+import { FoundryLocalManager } from "foundry-local-sdk";
+
+// By using an alias, the most suitable model will be downloaded
+// to your end-user's device.
+// TIP: You can find a list of available models by running the
+// following command in your terminal: `foundry model list`.
+const alias = "qwen2.5-0.5b";
+
+// Create a FoundryLocalManager instance. This will start the Foundry
+// Local service if it is not already running.
+const foundryLocalManager = new FoundryLocalManager();
+
+// Initialize the manager with a model. This will download the model
+// if it is not already present on the user's device.
+const modelInfo = await foundryLocalManager.init(alias);
+console.log("Model Info:", modelInfo);
+
+const openai = new OpenAI({
+  baseURL: foundryLocalManager.endpoint,
+  apiKey: foundryLocalManager.apiKey,
+});
+
+async function streamCompletion() {
+  const stream = await openai.chat.completions.create({
+    model: modelInfo.id,
+    messages: [{ role: "user", content: "What is the golden ratio?" }],
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    if (chunk.choices[0]?.delta?.content) {
+      process.stdout.write(chunk.choices[0].delta.content);
+    }
+  }
+}
+
+streamCompletion();
+```
+
+This example streams a chat completion response from the local model.
+
+References:
+
+- [Integrate with inference SDKs](../../how-to/how-to-integrate-with-inference-sdks.md)
+
+## Browser Usage
+
+The SDK includes a browser-compatible version where you must specify the host URL manually:
+
+```js
+import { FoundryLocalManager } from "foundry-local-sdk/browser";
+
+// Specify the service URL
+// Run the Foundry Local service using the CLI: `foundry service start`
+// and use the URL from the CLI output
+const host = "HOST";
+
+const manager = new FoundryLocalManager({ host });
+
+// Note: The `init`, `isServiceRunning`, and `startService` methods
+// are not available in the browser version
+```
+
+> [!NOTE]
+> The browser version doesn't support the `init`, `isServiceRunning`, and `startService` methods. You must ensure that the Foundry Local service is running before using the SDK in a browser environment. You can start the service using the Foundry Local CLI: `foundry service start`. You can glean the service URL from the CLI output.
+
+#### Example Usage
+
+```js
+import { FoundryLocalManager } from "foundry-local-sdk/browser";
+
+// Specify the service URL
+// Run the Foundry Local service using the CLI: `foundry service start`
+// and use the URL from the CLI output
+const host = "HOST";
+
+const manager = new FoundryLocalManager({ host });
+
+const alias = "qwen2.5-0.5b";
+
+// Get all available models
+const catalog = await manager.listCatalogModels();
+console.log("Available models in catalog:", catalog);
+
+// Download and load a specific model
+await manager.downloadModel(alias);
+await manager.loadModel(alias);
+
+// View models in your local cache
+const localModels = await manager.listCachedModels();
+console.log("Cached models:", localModels);
+
+// Check which models are currently loaded
+const loaded = await manager.listLoadedModels();
+console.log("Loaded models in inference service:", loaded);
+
+// Unload a model when finished
+await manager.unloadModel(alias);
+```
+
+References:
+
+- [Integrate with inference SDKs](../../how-to/how-to-integrate-with-inference-sdks.md)
+
+## C# SDK Reference
+
+### Prerequisites
+
+- Install Foundry Local CLI and ensure the `foundry` command is available on your `PATH`.
+
+### Installation
+
+To use the Foundry Local C# SDK, you need to install the NuGet package:
+
+```bash
+dotnet add package Microsoft.AI.Foundry.Local --version 0.3.0 
+```
+
+### A note on aliases
+
+Many methods outlined in this reference have an `aliasOrModelId` parameter in the signature. You can pass into the method either an **alias** or **model ID** as a value. Using an alias will:
+
+- Select the _best model_ for the available hardware. For example, if a Nvidia CUDA GPU is available, Foundry Local selects the CUDA model. If a supported NPU is available, Foundry Local selects the NPU model.
+- Allow you to use a shorter name without needing to remember the model ID.
+
+> [!TIP]
+> We recommend passing into the `aliasOrModelId` parameter an **alias** because when you deploy your application, Foundry Local acquires the best model for the end user's machine at run-time.
+
+> [!NOTE]
+> If you have an Intel NPU on Windows, ensure you have installed the [Intel NPU driver](https://www.intel.com/content/www/us/en/download/794734/intel-npu-driver-windows.html) for optimal NPU acceleration.
+
+### Enumerations
+
+#### `DeviceType`
+
+Represents the type of device used for model execution.
+
+| Value   | Description     |
+| ------- | --------------- |
+| CPU     | CPU device      |
+| GPU     | GPU device      |
+| NPU     | NPU device      |
+| Invalid | Invalid/unknown |
+
+#### `ExecutionProvider`
+
+Represents the execution provider for model inference.
+
+| Value                          | Description               |
+| ------------------------------ | ------------------------- |
+| Invalid                        | Invalid provider          |
+| CPUExecutionProvider           | CPU execution             |
+| WebGpuExecutionProvider        | WebGPU execution          |
+| CUDAExecutionProvider          | CUDA GPU execution        |
+| QNNExecutionProvider           | Qualcomm NPU execution    |
+| OpenVINOExecutionProvider      | Intel OpenVINO execution  |
+| NvTensorRTRTXExecutionProvider | NVIDIA TensorRT execution |
+| VitisAIExecutionProvider       | AMD Vitis AI execution    |
+
+### `FoundryLocalManager` Class
+
+The main entry point for managing models, cache, and the Foundry Local service.
+
+#### Construction
+
+```csharp
+var manager = new FoundryLocalManager();
+```
+
+#### Properties
+
+| Property         | Type     | Description                                |
+| ---------------- | -------- | ------------------------------------------ |
+| ServiceUri       | `Uri`    | The base URI of the Foundry Local service. |
+| Endpoint         | `Uri`    | The API endpoint (`ServiceUri` + `/v1`).   |
+| ApiKey           | `string` | The API key (default: `"OPENAI_API_KEY"`). |
+| IsServiceRunning | `bool`   | Indicates if the service is running.       |
+
+#### Service Management
+
+##### Start the service
+
+```csharp
+await manager.StartServiceAsync(CancellationToken.None);
+```
+
+Starts the Foundry Local service if not already running.
+
+##### Stop the service
+
+```csharp
+await manager.StopServiceAsync(CancellationToken.None);
+```
+
+Stops the Foundry Local service.
+
+##### Start and load a model (static helper)
+
+```csharp
+var manager = await FoundryLocalManager.StartModelAsync("aliasOrModelId");
+```
+
+Starts the service and loads the specified model.
+
+#### Catalog Management
+
+##### List all catalog models
+
+```csharp
+List<ModelInfo> models = await manager.ListCatalogModelsAsync();
+```
+
+Returns all available models in the catalog.
+
+##### Refresh the catalog
+
+```csharp
+manager.RefreshCatalog();
+```
+
+Clears the cached catalog so it will be reloaded on next access.
+
+##### Get model info by alias or ID
+
+```csharp
+ModelInfo? info = await manager.GetModelInfoAsync("aliasOrModelId");
+```
+
+Returns model info or `null` if not found.
+
+#### Cache Management
+
+##### Get cache location
+
+```csharp
+string cachePath = await manager.GetCacheLocationAsync();
+```
+
+Returns the directory path where models are cached.
+
+##### List cached models
+
+```csharp
+List<ModelInfo> cached = await manager.ListCachedModelsAsync();
+```
+
+Returns models downloaded to the local cache.
+
+#### Model Management
+
+##### Download a model
+
+```csharp
+ModelInfo? model = await manager.DownloadModelAsync("aliasOrModelId");
+```
+
+Downloads a model to the local cache.
+
+##### Download a model with progress
+
+```csharp
+await foreach (var progress in manager.DownloadModelWithProgressAsync("aliasOrModelId"))
+{
+    // progress.Percentage, progress.Status, etc.
+}
+```
+
+Streams download progress updates.
+
+##### Load a model
+
+```csharp
+ModelInfo loaded = await manager.LoadModelAsync("aliasOrModelId");
+```
+
+Loads a model into the inference server.
+
+##### List loaded models
+
+```csharp
+List<ModelInfo> loaded = await manager.ListLoadedModelsAsync();
+```
+
+Lists all models currently loaded in the service.
+
+##### Unload a model
+
+```csharp
+await manager.UnloadModelAsync("aliasOrModelId");
+```
+
+Unloads a model from the inference server.
+
+#### Disposal
+
+Implements both `IDisposable` and `IAsyncDisposable` for proper cleanup.
+
+```csharp
+manager.Dispose();
+// or
+await manager.DisposeAsync();
+```
+
+### Model Types
+
+This page documents the key data types used by the Foundry Local C# SDK for describing models, downloads, and runtime information.
+
+#### `PromptTemplate`
+
+Represents the prompt template for a model.
+
+| Property  | Type   | Description                      |
+| --------- | ------ | -------------------------------- |
+| Assistant | string | The assistant's prompt template. |
+| Prompt    | string | The user prompt template.        |
+
+#### `Runtime`
+
+Describes the runtime environment for a model.
+
+| Property          | Type                | Description                              |
+| ----------------- | ------------------- | ---------------------------------------- |
+| DeviceType        | `DeviceType`        | The device type (CPU, GPU, etc).         |
+| ExecutionProvider | `ExecutionProvider` | The execution provider (CUDA, CPU, etc). |
+
+#### `ModelSettings`
+
+Represents model-specific parameters.
+
+| Property   | Type                | Description                |
+| ---------- | ------------------- | -------------------------- |
+| Parameters | List\<JsonElement\> | Model parameter collection |
+
+#### `ModelInfo`
+
+Describes a model in the Foundry Local catalog or cache.
+
+| Property            | Type           | Description                             |
+| ------------------- | -------------- | --------------------------------------- |
+| ModelId             | string         | Unique model identifier.                |
+| DisplayName         | string         | Human-readable model name.              |
+| ProviderType        | string         | Provider type (e.g., "CUDA", "CPU").    |
+| Uri                 | string         | Download URI for the model.             |
+| Version             | string         | Model version.                          |
+| ModelType           | string         | Model type (e.g., "llm").               |
+| PromptTemplate      | PromptTemplate | Prompt template for the model.          |
+| Publisher           | string         | Publisher of the model.                 |
+| Task                | string         | Task type (e.g., "chat", "completion"). |
+| Runtime             | Runtime        | Runtime environment info.               |
+| FileSizeMb          | long           | Model file size in MB.                  |
+| ModelSettings       | ModelSettings  | Model-specific settings.                |
+| Alias               | string         | Alias for the model.                    |
+| SupportsToolCalling | bool           | Whether tool-calling is supported.      |
+| License             | string         | License identifier.                     |
+| LicenseDescription  | string         | License description.                    |
+| ParentModelUri      | string         | URI of the parent model, if any.        |
+
+#### `ModelDownloadProgress`
+
+Represents the progress of a model download operation.
+
+| Property     | Type       | Description                             |
+| ------------ | ---------- | --------------------------------------- |
+| Percentage   | double     | Download completion percentage (0-100). |
+| IsCompleted  | bool       | Whether the download is complete.       |
+| ModelInfo    | ModelInfo? | Model info if download completed.       |
+| ErrorMessage | string?    | Error message if download failed.       |
+
+**Static methods:**
+
+- `Progress(double percentage)`: Create a progress update.
+- `Completed(ModelInfo modelInfo)`: Create a completed progress result.
+- `Error(string errorMessage)`: Create an error result.
+
+### Example Usage
+
+```csharp
+using Microsoft.AI.Foundry.Local;
+
+var manager = new FoundryLocalManager();
+await manager.StartServiceAsync();
+
+var models = await manager.ListCatalogModelsAsync();
+var alias = "qwen2.5-0.5b";
+
+await manager.DownloadModelAsync(alias);
+await manager.LoadModelAsync(alias);
+
+var loaded = await manager.ListLoadedModelsAsync();
+
+await manager.UnloadModelAsync(alias);
+
+manager.Dispose();
+```
+
+## Rust SDK reference
+
+The Rust SDK for Foundry Local provides a way to manage models, control the cache, and interact with the Foundry Local service.
+
+### Prerequisites
+
+- Install Foundry Local CLI and ensure the `foundry` command is available on your `PATH`.
+- Use Rust 1.70.0 or later.
+
+### Installation
+To use the Foundry Local Rust SDK, add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+foundry-local = "0.1.0"
+```
+
+Alternatively, you can add the Foundry Local crate using `cargo`:
+
+```bash
+cargo add foundry-local@0
+```
+
+### Quickstart
+
+Use this snippet to verify that the SDK can start the service and read the local catalog.
+
+```rust
+use anyhow::Result;
+use foundry_local::FoundryLocalManager;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+  let mut manager = FoundryLocalManager::builder().bootstrap(true).build().await?;
+
+  let models = manager.list_catalog_models().await?;
+  println!("Catalog models available: {}", models.len());
+
+  Ok(())
+}
+```
+
+This example prints a nonzero number when the service is running and the catalog is available.
+
+References:
+
+- [Foundry Local documentation](/azure/ai-foundry/foundry-local/)
+- [foundry-local crate docs](https://docs.rs/foundry-local/0.1.0)
+
+### `FoundryLocalManager`
+
+Manager for Foundry Local SDK operations.
+
+#### Fields
+
+- `service_uri: Option<String>`: URI of the Foundry service.
+- `client: Option<HttpClient>`: HTTP client for API requests.
+- `catalog_list: Option<Vec<FoundryModelInfo>>`: Cached list of catalog models.
+- `catalog_dict: Option<HashMap<String, FoundryModelInfo>>`: Cached dictionary of catalog models.
+- `timeout: Option<u64>`: Optional HTTP client timeout.
+
+#### Methods
+
+- **`pub fn builder() -> FoundryLocalManagerBuilder`**  
+  Create a new builder for `FoundryLocalManager`.
+
+- **`pub fn service_uri(&self) -> Result<&str>`**  
+  Get the service URI.  
+  **Returns:** URI of the Foundry service.
+
+- **`fn client(&self) -> Result<&HttpClient>`**  
+  Get the HTTP client instance.  
+  **Returns:** HTTP client.
+
+- **`pub fn endpoint(&self) -> Result<String>`**  
+  Get the endpoint for the service.  
+  **Returns:** Endpoint URL.
+
+- **`pub fn api_key(&self) -> String`**  
+  Get the API key for authentication.  
+  **Returns:** API key.
+
+- **`pub fn is_service_running(&mut self) -> bool`**  
+  Check if the service is running and set the service URI if found.  
+  **Returns:** `true` if running, `false` otherwise.
+
+- **`pub fn start_service(&mut self) -> Result<()>`**  
+  Start the Foundry Local service.
+
+- **`pub async fn list_catalog_models(&mut self) -> Result<&Vec<FoundryModelInfo>>`**  
+  Get a list of available models in the catalog.
+
+- **`pub fn refresh_catalog(&mut self)`**  
+  Refresh the catalog cache.
+
+- **`pub async fn get_model_info(&mut self, alias_or_model_id: &str, raise_on_not_found: bool) -> Result<FoundryModelInfo>`**  
+  Get model information by alias or ID.  
+  **Arguments:**  
+  - `alias_or_model_id`: Alias or Model ID.  
+  - `raise_on_not_found`: If true, error if not found.
+
+- **`pub async fn get_cache_location(&self) -> Result<String>`**  
+  Get the cache location as a string.
+
+- **`pub async fn list_cached_models(&mut self) -> Result<Vec<FoundryModelInfo>>`**  
+  List cached models.
+
+- **`pub async fn download_model(&mut self, alias_or_model_id: &str, token: Option<&str>, force: bool) -> Result<FoundryModelInfo>`**  
+  Download a model.  
+  **Arguments:**  
+  - `alias_or_model_id`: Alias or Model ID.  
+  - `token`: Optional authentication token.  
+  - `force`: Force redownload if already cached.
+
+- **`pub async fn load_model(&mut self, alias_or_model_id: &str, ttl: Option<i32>) -> Result<FoundryModelInfo>`**  
+  Load a model for inference.  
+  **Arguments:**  
+  - `alias_or_model_id`: Alias or Model ID.  
+  - `ttl`: Optional time-to-live in seconds.
+
+- **`pub async fn unload_model(&mut self, alias_or_model_id: &str, force: bool) -> Result<()>`**  
+  Unload a model.  
+  **Arguments:**  
+  - `alias_or_model_id`: Alias or Model ID.  
+  - `force`: Force unloads even if in use.
+
+- **`pub async fn list_loaded_models(&mut self) -> Result<Vec<FoundryModelInfo>>`**  
+  List loaded models.
+
+### `FoundryLocalManagerBuilder`
+
+Builder for creating a `FoundryLocalManager` instance.
+
+#### Fields
+
+- `alias_or_model_id: Option<String>` — Alias or model ID to download and load.
+- `bootstrap: bool` — Whether to start the service if not running.
+- `timeout_secs: Option<u64>` — HTTP client timeout in seconds.
+
+#### Methods
+
+- **`pub fn new() -> Self`**  
+  Create a new builder instance.
+
+- **`pub fn alias_or_model_id(mut self, alias_or_model_id: impl Into<String>) -> Self`**  
+  Set the alias or model ID to download and load.
+
+- **`pub fn bootstrap(mut self, bootstrap: bool) -> Self`**  
+  Set whether to start the service if not running.
+
+- **`pub fn timeout_secs(mut self, timeout_secs: u64) -> Self`**  
+  Set the HTTP client timeout in seconds.
+
+- **`pub async fn build(self) -> Result<FoundryLocalManager>`**  
+  Build the `FoundryLocalManager` instance.
+
+### `FoundryModelInfo`
+
+Represents information about a model.
+
+#### Fields
+
+- `alias: String` — The model alias.
+- `id: String` — The model ID.
+- `version: String` — The model version.
+- `runtime: ExecutionProvider` — The execution provider (CPU, CUDA, etc.).
+- `uri: String` — The model URI.
+- `file_size_mb: i32` — Model file size in MB.
+- `prompt_template: serde_json::Value` — Prompt template for the model.
+- `provider: String` — Provider name.
+- `publisher: String` — Publisher name.
+- `license: String` — License type.
+- `task: String` — Model task (for example, text-generation).
+
+#### Methods
+
+- **`from_list_response(response: &FoundryListResponseModel) -> Self`**  
+  Creates a `FoundryModelInfo` from a catalog response.
+
+- **`to_download_body(&self) -> serde_json::Value`**  
+  Converts the model info to a JSON body for download requests.
+
+### `ExecutionProvider`
+
+Enum for supported execution providers.
+
+- `CPU`
+- `WebGPU`
+- `CUDA`
+- `QNN`
+
+##### Methods
+
+- **`get_alias(&self) -> String`**  
+  Returns a string alias for the execution provider.
+
+#### `ModelRuntime`
+
+Describes the runtime environment for a model.
+
+- `device_type: DeviceType`
+- `execution_provider: ExecutionProvider`
+
+<!-- markdownlint-enable MD044 -->

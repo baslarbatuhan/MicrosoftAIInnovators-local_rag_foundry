@@ -1,0 +1,88 @@
+Kaynak: foundry CLI v0.8.119 (yerel çıktı)
+
+# Foundry Local CLI command reference
+
+Foundry Local CLI help output (from installed CLI).
+
+## foundry --help
+
+Description:
+  Foundry Local CLI: Run AI models on your device.
+  
+  🚀 Getting started:
+  
+     1. To view available models: foundry model list
+     2. To run a model: foundry model run <model>
+  
+     EXAMPLES:
+         foundry model run phi-3-mini-4k
+
+Kullanım:
+  foundry [command] [options]
+
+Seçenekler:
+  -?, -h, --help  Show help and usage information
+  --version       Sürüm bilgilerini göster
+  --license       Display foundry license information
+
+Komutlar:
+  model    Discover, run and manage models
+  cache    Manage the local cache
+  service  Manage the local model inference service
+
+## foundry model --help
+
+Description:
+  Discover, run and manage models
+
+Kullanım:
+  foundry model [command] [options]
+
+Seçenekler:
+  -?, -h, --help  Show help and usage information
+
+Komutlar:
+  run <model>       Chat completion support
+  list, ls          List all available models
+  info <model>      Display the model information
+  download <model>  Download a model to local cache
+  load <model>      Load a model to the service
+  unload <model>    Unload a model from the service
+
+## foundry service --help
+
+Description:
+  Manage the local model inference service
+
+Kullanım:
+  foundry service [command] [options]
+
+Seçenekler:
+  -?, -h, --help  Show help and usage information
+
+Komutlar:
+  list, ps                      List the models loaded in the service
+  start                         Start the service
+  stop                          Stop the service
+  restart                       Restart the service
+  status                        Check the status of the service
+  set                           Set settings of foundry service.
+  init                          (Re)run autoregistration of EPs for Windows.
+  diag, diagnostic <directory>  Diagnostic helpers.
+
+## foundry cache --help
+
+Description:
+  Manage the local cache
+
+Kullanım:
+  foundry cache [command] [options]
+
+Seçenekler:
+  -?, -h, --help  Show help and usage information
+
+Komutlar:
+  location            Print the directory path of the model cache
+  list, ls            List models on the local cache (disk)
+  remove, rm <model>  Delete model from the local cache (disk)
+  cd <path>           Change directory path of the model cache

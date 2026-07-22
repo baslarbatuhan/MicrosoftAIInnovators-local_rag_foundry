@@ -1,0 +1,29 @@
+# CI: her push ve pull request'te birim testlerini koşar.
+#
+# Notlar:
+# - windows-latest: foundry-local-sdk'nın native binary'leri Windows'ta garanti
+#   pip-kurulabilir (geliştirme ortamıyla da birebir aynı platform).
+# - Testler saf fonksiyonları kapsar (chunk_text, is_refusal, cosine_similarity,
+#   read_document) — model indirme/yükleme GEREKMEZ; SDK sadece import edilir,
+#   initialize() hiç çağrılmaz.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install foundry-local-sdk pytest
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -v

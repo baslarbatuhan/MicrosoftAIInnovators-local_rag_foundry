@@ -1,0 +1,99 @@
+TABAN BİLGİ TESTİ — phi-3.5-mini, BAĞLAMSIZ (RAG yok)
+Model kesimi ~Ekim 2023; Foundry Local dokümanları 2025-2026 tarihli.
+
+SORU: What is Microsoft Foundry Local?
+CEVAP: Microsoft Foundry, formerly known as Project Reunion, is an initiative by Microsoft aimed at bringing together a wide range of open-source software projects into a single, unified repository. The goal is to simplify the process of finding, using, and contributing to these projects, making it easier for developers to build upon existing work and collaborate within the Microsoft ecosystem.
+
+Microsoft Foundry Local refers to the localized version of this repository, which is tailored for developers who work within the Microsoft environment or want to contribute to Microsoft-related projects. It typically includes projects that are built on top of Microsoft's frameworks, libraries, and services, such as .NET, ASP.NET, and Azure.
+
+By having a centralized repository, Microsoft Foundry Local helps developers:
+
+1. Discover and access a vast collection of open-source projects.
+2. Contribute to projects that align with Microsoft's technology stack.
+3. Collaborate with other developers who share similar interests and expertise.
+4. Streamline the development process by using standardized tools and libraries.
+
+In summary, Microsoft Foundry Local is a curated collection of open-source projects that are relevant to Microsoft's
+----------------------------------------------------------------------
+SORU: How do I install Foundry Local on Windows?
+CEVAP: Foundry Local is a suite of tools used for blockchain development, particularly for the Ethereum blockchain. To install Foundry Local on Windows, you can follow these steps:
+
+1. Install Node.js: Foundry requires Node.js to run. You can download and install it from the official website: https://nodejs.org/
+
+2. Install npm (Node Package Manager): Node.js comes with npm pre-installed, but you can verify its installation by opening your command prompt and typing `npm -v`. If it's not installed, you can download and install it from here: https://www.npmjs.com/get-npm
+
+3. Install Foundry: You can install Foundry using npm by running the following command in your command prompt:
+
+```
+npm install --global foundry-cli
+```
+
+4. Install Foundry Local: To install Foundry Local, run the following command:
+
+```
+foundry install local
+```
+
+This command will download and install Foundry Local on your system.
+
+5. Verify Installation: To verify that Foundry Local is installed correctly, run the following command:
+
+```
+foundry local version
+----------------------------------------------------------------------
+SORU: Which CLI command lists the models in the Foundry Local catalog?
+CEVAP: Foundry, which is now commonly referred to as ForgeRock, is a platform for identity management and access management. It doesn't have a standardized command-line interface (CLI) across all installations, as it can be integrated into various systems and environments.
+
+If you're using Foundry's CLI tools, such as `foundryctl` or `foundry-cli`, and you you want to list the models in the Foundry Local catalog, you would typically use a command that interacts with the local catalog service. However, the exact command can vary based on the version of Foundry CLI you are using and the specific setup of your Foundry environment.
+
+Here are some general steps you might take to list models in a Foundry Local catalog:
+
+1. **Check the Documentation**: The first step is to check the official Foundry documentation for the CLI tools you are using. They often provide a list of commands and their usage.
+
+2. **Use `foundryctl`**: If you are using `foundryctl`, you might try a command like:
+
+   ```
+   foundryctl catalog list
+   ```
+
+   This command might list the available catalog
+----------------------------------------------------------------------
+SORU: How do I generate embeddings with the Foundry Local Python SDK?
+CEVAP: The Foundry Local Python SDK is not a standard or widely recognized tool for generating embeddings. It's possible that you might be referring to a specific library or framework for working with embeddings, but without more context, it's challenging to provide accurate guidance.
+
+If you are looking to generate embeddings for natural language processing (NLP) tasks, here's a general approach using popular libraries like TensorFlow or PyTorch:
+
+1. Install the necessary libraries:
+```bash
+pip install tensorflow numpy
+```
+
+2. Load a pre-trained model (e.g., BERT, GPT, or Word2Vec):
+
+For BERT:
+```python
+from transformers import BertTokenizer, BertModel
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertModel.from_pretrained('bert-base-uncased')
+```
+
+For Word2Vec:
+```python
+from gensim.models import KeyedVectors
+
+word_vectors = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300
+----------------------------------------------------------------------
+SORU: What is the difference between the current and the legacy Foundry Local SDK?
+CEVAP: The Foundry Local SDK, commonly referred to as Foundry's local rendering toolset, is used for visualizing and testing game assets within the Foundry suite of tools, particularly for the Unity and Unreal engines. Over time, Foundry has released different versions of the Local SDK, with each iteration typically bringing enhancements, new features, and improvements in performance and compatibility.
+
+Here are some key differences between the current and legacy Foundry Local SDK:
+
+1. Features: The current version of the Foundry Local SDK may include new rendering features, visualization tools, and optimizations that were not present in the legacy version. These enhancements can improve the overall experience for artists and developers working with complex scenes and assets.
+
+2. Compatibility: The current version of the SDK may be designed to work seamlessly with the latest versions of Unity and Unreal engines, ensuring better integration and compatibility with other tools and workflows used by developers.
+
+3. Performance: With each new release, Foundry aims to optimize the Local SDK for better performance, which can result in faster rendering times and smoother visualizations, especially for high-resolution assets and complex scenes.
+
+4. User
+----------------------------------------------------------------------

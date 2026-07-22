@@ -1,7 +1,17 @@
 foundry-local-sdk
-# import: from foundry_local_sdk import FoundryLocalManager
+# import: from foundry_local_sdk import FoundryLocalManager  (chat + embedding modelleri)
 
-# Sadece prepare_dataset.py için (Kaggle'dan bilgi tabanı dataset'ini indirmek üzere)
-kagglehub
-kagglesdk==0.1.28
+# Cross-encoder reranker (rag/reranker.py) — yerel, ücretsiz, PyTorch GEREKTİRMEZ.
+# bge-reranker-base ONNX'i onnxruntime-CPU ile koşar; tokenizer + model indirmesi için hf.
+onnxruntime
+tokenizers
+huggingface_hub
 
+# Web arayüzü (rag/app.py — opsiyonel, CLI için gerekmez)
+streamlit
+
+# Veri toplama (scripts/prepare_dataset.py — dokümanları GitHub'dan indirir)
+requests
+
+# Geliştirme/test (CI de kullanır)
+pytest
