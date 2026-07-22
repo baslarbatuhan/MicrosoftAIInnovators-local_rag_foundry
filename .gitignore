@@ -15,5 +15,11 @@ venv/
 # IDE ayarları
 .vscode/
 
+# Claude Code yerel dizini (oturum/worktree/ayarlar — repo'ya girmesin)
+.claude/
+
+# Üretilen telemetri (çalışma zamanı çıktısı)
+data/*.jsonl
+
 *.md
 !README.md
