@@ -70,9 +70,13 @@ def read_document(path: str) -> tuple[str, str]:
         text = f.read()
 
     lines = text.split("\n", 2)
-    if lines[0].startswith("Kaynak:"):
-        source_url = lines[0].removeprefix("Kaynak:").strip()
-        body = lines[2] if len(lines) > 2 else ""
+    # İlk satır bir kaynak-URL başlığıysa ayır — İngilizce "Source:" ya da eski "Kaynak:"
+    # (mevcut korpus dosyaları "Kaynak:" ile başlıyor; kullanıcı dokümanları "Source:" kullanabilir).
+    for prefix in ("Source:", "Kaynak:"):
+        if lines[0].startswith(prefix):
+            source_url = lines[0].removeprefix(prefix).strip()
+            body = lines[2] if len(lines) > 2 else ""
+            break
     else:
         source_url = os.path.basename(path)
         body = text

@@ -47,9 +47,24 @@ Every component is **local and free** — no cloud, no paid API, no PyTorch.
                      Answer + deterministic source list
 ```
 
-**Ingestion** (built once, refreshable): documents are split with **contextual, markdown-heading-aware
-chunking** (each chunk is embedded as `heading path + content`, which bridges the gap between a user's
-natural question and the docs' technical wording); pure-metadata lines (e.g. date stamps) are dropped.
+**Why this pipeline** — each stage earns its place, and each was kept only after it measurably helped:
+
+- **Contextual chunking** *(ingestion, built once & refreshable)*: documents are split by markdown
+  heading, and each chunk is embedded as `heading path + content`. This asymmetric enrichment bridges
+  the gap between a user's natural question and the docs' technical wording; pure-metadata lines
+  (e.g. date stamps) are dropped as noise so they can't win retrieval with empty content.
+- **Hybrid retrieval**: vector search catches conceptual matches ("how do I run it offline?"), while
+  BM25/FTS5 catches exact terms — command names, `ONNX`, config keys — that dense embeddings blur.
+- **Cross-encoder reranker**: re-scores every `(question, chunk)` pair *jointly* (a bi-encoder embeds
+  the two separately), surfacing the right chunk when it isn't in the vector top-3. It is also the
+  safety filter that makes BM25 usable — fed straight to the model, raw keyword matches had induced
+  fabrications; behind the reranker they are filtered out.
+- **Parent-document expansion**: retrieval finds the precise chunk, but the model is handed that
+  chunk's *full source document* (windowed). A terse hit — a bare command or a lone code block — is
+  then answered with its surrounding context instead of in isolation.
+- **Grounded generation**: the system prompt allows reasonable inference from the context but refuses
+  as a last resort — and never deflects to a related term when the exact answer is absent — which is
+  what keeps the assistant fabrication-free (11/11 correct refusals).
 
 | Component | Technology |
 |---|---|
@@ -98,22 +113,22 @@ python -m streamlit run rag/app.py   # web UI (streaming answers, source caption
 Example session:
 
 ```
-Soru: How does tool calling work with Foundry Local?
+Question: How does tool calling work with Foundry Local?
 
-Cevap: You prompt the model with definitions of available tools; the model decides which
+Answer: You prompt the model with definitions of available tools; the model decides which
 tools to call and with what inputs, then your application runs them and feeds the results
 back. Run `foundry model list` and look for the `tools` task to see which models support it.
-Kaynaklar: how-to__how-to-use-tool-calling-with-foundry-local.txt
+Sources: how-to__how-to-use-tool-calling-with-foundry-local.txt
 
-Soru: What is the internal Microsoft codename for the Foundry Local project?
+Question: What is the internal Microsoft codename for the Foundry Local project?
 
-Cevap: I don't have that information.
+Answer: I don't have that information.
 ```
 
-Type `exit`, `quit`, or `çık` to quit.
+Type `exit` or `quit` to quit.
 
 **To use your own documents:** drop `.txt` files into `knowledge_bases/foundry/documents/` and
-re-run `python -m rag.ingest` (if the first line is `Kaynak: <url>`, it is parsed as the source URL).
+re-run `python -m rag.ingest` (if the first line is `Source: <url>`, it is parsed as the source URL).
 
 ## Evaluation
 

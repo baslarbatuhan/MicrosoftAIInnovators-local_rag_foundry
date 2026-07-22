@@ -21,7 +21,7 @@ from rag.retrieval import get_top_chunks
 st.set_page_config(page_title="Local RAG Assistant", page_icon="📚")
 
 
-@st.cache_resource(show_spinner="Model yükleniyor (ilk açılışta ~30 sn sürebilir)...")
+@st.cache_resource(show_spinner="Loading model (first launch may take ~30 s)...")
 def get_chat_client():
     """Model bir kez yüklenir, Streamlit yeniden çalıştırmalarında cache'ten gelir."""
     return load_chat_client()
@@ -31,9 +31,9 @@ chat_client = get_chat_client()
 
 st.title("📚 Foundry Local Documentation Assistant")
 st.caption(
-    "Resmi Foundry Local dokümantasyonundan cevap verir — Foundry Local üzerinde, tamamen "
-    "çevrimdışı çalışır, kaynak gösterir, bilmediğinde uydurmaz. Soruları İngilizce sor "
-    '(ör. "How do I install Foundry Local?").'
+    "Answers from the official Foundry Local documentation — running on Foundry Local, fully "
+    "offline, with source attribution, and refusing to guess when the docs don't have the answer "
+    '(e.g. "How do I install Foundry Local?").'
 )
 
 if "history" not in st.session_state:
@@ -46,9 +46,9 @@ for entry in st.session_state.history:
     with st.chat_message("assistant"):
         st.write(entry["answer"])
         if entry["sources"]:
-            st.caption("Kaynaklar: " + ", ".join(entry["sources"]))
+            st.caption("Sources: " + ", ".join(entry["sources"]))
 
-question = st.chat_input("Sorunu yaz (İngilizce)...")
+question = st.chat_input("Ask a question (in English)...")
 if question:
     with st.chat_message("user"):
         st.write(question)
@@ -66,12 +66,12 @@ if question:
         placeholder.markdown(answer)
 
         if sources:
-            st.caption("Kaynaklar: " + ", ".join(sources))
+            st.caption("Sources: " + ", ".join(sources))
 
         # Şeffaflık: modelin gördüğü chunk'lar (CLI'daki --verbose'un UI karşılığı)
-        with st.expander("🔍 Retrieval detayı — modelin gördüğü chunk'lar"):
+        with st.expander("🔍 Retrieval detail — the chunks the model saw"):
             for i, chunk in enumerate(get_top_chunks(question), start=1):
-                st.markdown(f"**#{i} — {chunk['source']}** (benzerlik: {chunk['score']:.3f})")
+                st.markdown(f"**#{i} — {chunk['source']}** (similarity: {chunk['score']:.3f})")
                 st.text(chunk["content"][:400] + ("..." if len(chunk["content"]) > 400 else ""))
 
     st.session_state.history.append(

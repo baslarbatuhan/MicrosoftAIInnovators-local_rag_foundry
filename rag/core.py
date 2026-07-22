@@ -212,7 +212,7 @@ def load_chat_client():
         model.select_variant(gpu_variant)
 
     if not model.is_cached:
-        print(f"'{CHAT_MODEL_ALIAS}' indiriliyor...")
+        print(f"Downloading '{CHAT_MODEL_ALIAS}'...")
         model.download(progress_callback=lambda pct: print(f"  %{pct:.1f}", end="\r"))
         print()
 
@@ -231,13 +231,13 @@ def main():
     # --verbose bayrağı: retrieval'ın getirdiği chunk'ları göster (demo/hata ayıklama)
     verbose = "--verbose" in sys.argv
 
-    print("Model yükleniyor...")
+    print("Loading model...")
     chat_client = load_chat_client()
 
-    print("Local RAG Assistant hazır. Çıkmak için 'exit' yaz.\n")
+    print("Foundry Local Assistant ready. Type 'exit' to quit.\n")
     while True:
-        question = input("Soru: ").strip()
-        if question.lower() in ("exit", "quit", "çık"):
+        question = input("Question: ").strip()
+        if question.lower() in ("exit", "quit"):
             break
         if not question:
             continue
@@ -249,22 +249,22 @@ def main():
 
         def show_delta(text: str) -> None:
             if not label_printed[0]:
-                print("\nCevap: ", end="", flush=True)
+                print("\nAnswer: ", end="", flush=True)
                 label_printed[0] = True
             print(text, end="", flush=True)
 
         answer, sources = answer_query(question, chat_client, verbose=verbose, on_delta=show_delta)
         if not label_printed[0]:
             # Hiç token akmadıysa (ör. guard'dan dönen sabit cevap) etiketi yine bas
-            print(f"\nCevap: {answer}", end="")
+            print(f"\nAnswer: {answer}", end="")
         print()
         if sources:
-            print(f"Kaynaklar: {', '.join(sources)}")
+            print(f"Sources: {', '.join(sources)}")
         if verbose and telemetry.last_record:
             r = telemetry.last_record
             timings = "  ".join(f"{k.removeprefix('t_').removesuffix('_s')}={v}s"
                                 for k, v in r.items() if k.startswith("t_"))
-            print(f"[süreler] {timings}")
+            print(f"[timings] {timings}")
         print()
 
 
