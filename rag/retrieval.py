@@ -1,13 +1,13 @@
 """
 Retrieval pipeline (get_top_chunks):
-  1. Sorguyu embed et, tüm chunk'lara karşı cosine similarity → vektör top-N aday.
-  2. HYBRID_RETRIEVAL açıksa FTS5/BM25 keyword adaylarını da havuza ekle (kesin terimleri
-     — ONNX, komut adları — yakalar; vektörün kaçırdığını sokar).
-  3. RERANK açıksa cross-encoder birleşik havuzu (soru, chunk) çifti olarak yeniden puanlar → top_k.
+  1. Sorguyu embed et, tüm chunk'lara karşı cosine benzerliği hesapla, en iyi adayları al.
+  2. HYBRID_RETRIEVAL açıksa BM25/FTS5 keyword adaylarını da havuza ekle (komut adları, ONNX gibi
+     kesin terimleri yakalar).
+  3. RERANK açıksa cross-encoder havuzu (soru, chunk) çifti olarak yeniden puanlayıp top_k'yı seçer.
 
-Kritik tasarım: ham BM25 modele DEĞİL reranker'a beslenir. Ham BM25→model füzyonu (RRF) 2× ölçülüp
-reddedilmişti (keyword-eşleşen alakasız bağlam uydurma tetikliyordu); reranker o güvenlik filtresini
-sağlıyor. expand_parents(): retrieved chunk'ı parent-document bağlamına genişletir (bkz. main.py).
+Önemli nokta: BM25 doğrudan modele değil reranker'a besleniyor. BM25'i doğrudan modele vermek eskiden
+alakasız bağlamla uydurma tetikliyordu; reranker o gürültüyü eliyor. expand_parents() retrieved
+chunk'ı ait olduğu dokümanın bağlamına genişletir.
 """
 import json
 import re
@@ -21,8 +21,8 @@ from rag.config import DB_PATH, EMBEDDING_MODEL_ALIAS, HYBRID_RETRIEVAL, RERANK,
 
 FUSION_CANDIDATES = 20  # HYBRID açıkken BM25'ten çekilip reranker havuzuna eklenen aday sayısı
 
-# BM25 sorgusundan elenen İngilizce stopword'ler — OR sorgusunda kalırlarsa
-# neredeyse her chunk eşleşir ve sıralama kirlenir (ölçümle görüldü).
+# BM25 sorgusundan elenen İngilizce stopword'ler. OR sorgusunda kalırlarsa neredeyse her chunk
+# eşleşip sıralamayı bozuyorlar.
 STOPWORDS = frozenset(
     "a an and are as at be by can do does did for from had has have how i in is it its "
     "of on or that the this to was were what when where which who why will with you your".split()
@@ -30,9 +30,8 @@ STOPWORDS = frozenset(
 
 
 def get_manager() -> FoundryLocalManager:
-    """FoundryLocalManager zaten başlatılmışsa (ör. main.py tarafından) mevcut
-    instance'ı kullanır, değilse burada başlatır. Singleton'ı iki kez
-    initialize etmeye çalışmak hataya neden olduğu için bu kontrol gerekli."""
+    """FoundryLocalManager zaten başlatılmışsa onu kullanır, değilse başlatır. Singleton'ı iki kez
+    initialize etmek hata verdiği için bu kontrol gerekli."""
     if FoundryLocalManager.instance is None:
         FoundryLocalManager.initialize(Configuration(app_name="LocalRagAssistant"))
     return FoundryLocalManager.instance
@@ -46,10 +45,10 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 def _bm25_ranking(conn: sqlite3.Connection, query: str, limit: int) -> list[int]:
-    """FTS5/BM25 keyword sıralaması — en alakalıdan aza doğru chunk id listesi.
+    """BM25 keyword sıralaması — en alakalıdan aza chunk id listesi.
 
-    Soru, FTS5 sorgu sözdizimine takılmasın diye sade alfanümerik token'lara
-    indirgenir; stopword'ler elenir; kalanlar OR ile birleştirilir.
+    Soru, FTS5 sözdizimine takılmasın diye sade token'lara indirgenir, stopword'ler elenir,
+    kalanlar OR ile birleştirilir.
     """
     tokens = re.findall(r"[a-z0-9]+", query.lower())
     tokens = [t for t in tokens if len(t) >= 2 and t not in STOPWORDS]
@@ -65,9 +64,9 @@ def _bm25_ranking(conn: sqlite3.Connection, query: str, limit: int) -> list[int]
 
 
 def get_top_chunks(query: str, top_k: int = 3) -> list[dict]:
-    """Verilen sorgu için en alakalı top_k chunk'ı döner.
-    Her sonuç {'id', 'source', 'heading_path', 'content', 'score'} (+ RERANK açıksa 'rerank_score').
-    'score' = cosine similarity; nihai sıralama reranker skorundadır."""
+    """Sorgu için en alakalı top_k chunk'ı döner. Her sonuç {'id', 'source', 'heading_path',
+    'content', 'score'} (RERANK açıksa 'rerank_score' de). 'score' cosine benzerliği; nihai
+    sıralama reranker'dan gelir."""
     manager = get_manager()
     model = manager.catalog.get_model(EMBEDDING_MODEL_ALIAS)
     model.load()
@@ -90,11 +89,9 @@ def get_top_chunks(query: str, top_k: int = 3) -> list[dict]:
         vector_ids = sorted(scored, key=lambda i: scored[i]["score"], reverse=True)
 
     if RERANK:
-        # Aday havuzu: vektör yüksek-recall top-N. HYBRID açıksa BM25 adayları da eklenir
-        # (kesin terimleri — ONNX, komut adları — yakalar; vektörün kaçırdığını havuza sokar).
-        # Reranker bu BİRLEŞİK havuzu (soru, chunk) çifti olarak yeniden puanlar → en iyi top_k.
-        # Kritik: ham BM25'i modele DEĞİL reranker'a besliyoruz — eski hybrid redlerinde
-        # eksik olan güvenlik filtresi bu (keyword-eşleşen alakasız bağlam reranker'da elenir).
+        # Aday havuzu: vektörün yüksek-recall top-N'i. HYBRID açıksa BM25 adayları da eklenir.
+        # Reranker bu havuzu (soru, chunk) çifti olarak yeniden puanlayıp top_k'yı seçer. BM25'i
+        # doğrudan modele değil reranker'a veriyoruz; alakasız keyword eşleşmeleri burada eleniyor.
         cand_ids = list(vector_ids[:RERANK_CANDIDATES])
         for row_id in bm25_ids:  # HYBRID kapalıysa bm25_ids == [] → salt-vektör havuzu
             if row_id not in cand_ids:
@@ -103,15 +100,15 @@ def get_top_chunks(query: str, top_k: int = 3) -> list[dict]:
         with telemetry.stage("rerank"):
             return reranker.rerank(query, candidates, top_k)
 
-    # RERANK kapalı (ablation/debug) → salt-vektör top_k. Hibrit BM25 YALNIZCA reranker havuzunu
-    # besler; ham BM25→model füzyonu (RRF) 2× ölçülüp reddedildi ve kaldırıldı (bkz. PLAN.md).
+    # RERANK kapalı (ablation/debug): salt-vektör top_k. BM25 sadece reranker havuzunu besler;
+    # doğrudan füzyon denendi ama işe yaramadı, kaldırıldı.
     return [scored[i] for i in vector_ids[:top_k]]
 
 
 def _window(chunks_in_doc: list[tuple[int, str]], center_id, cap: int) -> str:
-    """Bir dokümanın chunk içeriklerini id sırasında birleştirir. Toplam cap'i aşarsa,
-    retrieved chunk'a (center_id) ortalanmış bir pencere alır (iki yöne dengeli büyüyerek) —
-    böylece büyük dokümanlarda bile en alakalı bölge + komşuları modele gider."""
+    """Bir dokümanın chunk'larını id sırasında birleştirir. Toplam cap'i aşarsa retrieved chunk'a
+    ortalanmış bir pencere alır (iki yöne dengeli büyüyerek), böylece büyük dokümanlarda bile en
+    alakalı bölge komşularıyla birlikte modele gider."""
     full = "\n\n".join(content for _, content in chunks_in_doc)
     if len(full) <= cap:
         return full
@@ -130,13 +127,12 @@ def _window(chunks_in_doc: list[tuple[int, str]], center_id, cap: int) -> str:
 
 
 def expand_parents(chunks: list[dict], max_chars: int = None) -> list[dict]:
-    """Parent-document retrieval: her retrieved chunk'ı ait olduğu DOKÜMANA genişletir
-    (aynı source'un tüm chunk'ları, id sırasında; cap'i aşarsa retrieved chunk'a ortalı pencere).
-    source bazında dedup (aynı dokümandan birden çok chunk gelirse tek parent). Sıralama korunur.
+    """Her retrieved chunk'ı ait olduğu dokümana genişletir (aynı source'un chunk'ları id sırasında;
+    cap'i aşarsa chunk'a ortalanmış pencere). Aynı dokümandan birden çok chunk gelirse tek parent'a
+    indirilir, sıralama korunur.
 
-    Küçük dokümanlar (çoğu) TAM verilir → model "vizyonunu" kaybetmez, cevap komşu bölümdeyse de
-    yakalar (section-level bunu ıskalıyordu). Büyük dokümanlar cap ile pencerelenir (gürültü/gecikme
-    koruması). content genişler; source/heading_path korunur. Retrieval sırası/metrikleri etkilenmez."""
+    Küçük dokümanlar (çoğu) tam veriliyor, böylece cevap komşu bölümde olsa da yakalanıyor; büyük
+    dokümanlar cap ile pencereleniyor. Sadece content genişler, retrieval sırası ve metrikler değişmez."""
     from rag.config import PARENT_MAX_CHARS
     cap = PARENT_MAX_CHARS if max_chars is None else max_chars
 

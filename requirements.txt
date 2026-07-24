@@ -10,8 +10,14 @@ huggingface_hub
 # Web arayüzü (rag/app.py — opsiyonel, CLI için gerekmez)
 streamlit
 
+# API servis katmanı (rag/api.py — RAG motorunu HTTP üzerinden sunar; yerel/offline, 127.0.0.1).
+# CLI/Streamlit için gerekmez; opsiyonel.
+fastapi
+uvicorn[standard]
+
 # Veri toplama (scripts/prepare_dataset.py — dokümanları GitHub'dan indirir)
 requests
 
 # Geliştirme/test (CI de kullanır)
 pytest
+httpx           # FastAPI TestClient (tests/test_api.py) için

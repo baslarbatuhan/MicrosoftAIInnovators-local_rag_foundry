@@ -65,11 +65,16 @@ Every component is **local and free** — no cloud, no paid API, no PyTorch.
 - **Grounded generation**: the system prompt allows reasonable inference from the context but refuses
   as a last resort — and never deflects to a related term when the exact answer is absent — which is
   what keeps the assistant fabrication-free (11/11 correct refusals).
+- **Multi-turn (condense-only)**: a follow-up like *"and in JavaScript?"* is first rewritten into a
+  standalone query from the recent conversation (coreference resolution) so retrieval reaches the right
+  docs; a genuinely new question skips this step so a topic switch isn't dragged back. History feeds
+  *retrieval only* — each answer is still generated single-turn from freshly retrieved context, so
+  grounding never leaks from a prior turn.
 
 | Component | Technology |
 |---|---|
 | LLM runtime | Microsoft Foundry Local (in-process SDK) |
-| Chat model | `phi-3.5-mini` (3.8B, `temperature=0`, `max_tokens=256`; CUDA GPU variant when available, CPU fallback) |
+| Chat model | `phi-3.5-mini` (3.8B, `temperature=0`, `max_tokens=512`; CUDA GPU variant when available, CPU fallback) |
 | Embedding model | `qwen3-embedding-0.6b` (1024-dim vectors) |
 | Reranker | `bge-reranker-base` cross-encoder, ONNX via `onnxruntime` (CPU, no PyTorch) |
 | Vector + keyword store | SQLite — JSON-serialized embeddings (brute-force cosine) + FTS5/BM25 index |
@@ -108,24 +113,65 @@ python -m rag --verbose           # also logs retrieved chunks + stage timings
 
 python -m streamlit run rag/app.py   # web UI (streaming answers, source captions,
                                      # retrieval-detail expander)
+
+python -m rag.api                    # HTTP API (FastAPI) on http://127.0.0.1:8000
 ```
 
 Example session:
 
 ```
-Question: How does tool calling work with Foundry Local?
+Question: How do I generate embeddings with Foundry Local?
 
-Answer: You prompt the model with definitions of available tools; the model decides which
-tools to call and with what inputs, then your application runs them and feeds the results
-back. Run `foundry model list` and look for the `tools` task to see which models support it.
-Sources: how-to__how-to-use-tool-calling-with-foundry-local.txt
+Answer: Install foundry-local-sdk, clone the foundry-samples repository, then embed your
+documents in a single batch with the embedding client and keep the returned vectors.
+Sources: how-to__how-to-generate-embeddings.txt
 
-Question: What is the internal Microsoft codename for the Foundry Local project?
+Question: Can I do that in JavaScript?          # "that" is resolved to "generate embeddings" from the previous turn
+
+Answer: Yes — the same sample exists for JavaScript: create the client with
+getEmbeddingClient(), call generateEmbeddings(...), and run it with `node app.js`.
+Sources: how-to__how-to-generate-embeddings.txt
+
+Question: Does Foundry Local integrate with Slack?
 
 Answer: I don't have that information.
 ```
 
 Type `exit` or `quit` to quit.
+
+### HTTP API
+
+`python -m rag.api` serves the same engine over HTTP (FastAPI, bound to `127.0.0.1:8000`, no
+internet). The model is loaded once at startup; the API is **stateless** — the client sends the
+conversation history, so multi-turn works without server-side sessions.
+
+```bash
+# Single-turn
+curl -s http://127.0.0.1:8000/chat -H "Content-Type: application/json" \
+  -d '{"question":"How do I generate embeddings with Foundry Local?"}'
+# → {"answer":"...","sources":["how-to__how-to-generate-embeddings.txt", ...],"retrieval":null}
+
+# Multi-turn: the client passes prior turns; "that" is resolved for retrieval
+curl -s http://127.0.0.1:8000/chat -H "Content-Type: application/json" \
+  -d '{"question":"Can I do that in JavaScript?",
+       "history":[{"question":"How do I generate embeddings?","answer":"..."}],
+       "include_retrieval":true}'
+# → answer + sources + retrieval.search_query ("...in JavaScript...") and the chunks the model saw
+
+# Streaming (Server-Sent Events): one `event: token` per token, then `event: done` with the
+# full answer + sources
+curl -sN http://127.0.0.1:8000/chat/stream -H "Content-Type: application/json" \
+  -d '{"question":"What is Foundry Local?"}'
+
+# Inspect retrieval only (no LLM call) — for debugging/eval
+curl -s http://127.0.0.1:8000/search -H "Content-Type: application/json" \
+  -d '{"query":"tool calling","top_k":2}'
+```
+
+Endpoints: `GET /health` (liveness + whether the model is loaded), `POST /chat`
+(`{question, history?, top_k?, include_retrieval?}` → `{answer, sources, retrieval?}`),
+`POST /chat/stream` (same body → SSE token stream), `POST /search` (`{query, top_k?}` → the raw
+retrieved chunks, no generation). Interactive docs at `http://127.0.0.1:8000/docs`.
 
 **To use your own documents:** drop `.txt` files into `knowledge_bases/foundry/documents/` and
 re-run `python -m rag.ingest` (if the first line is `Source: <url>`, it is parsed as the source URL).
@@ -145,7 +191,7 @@ Current baseline (deterministic, `temperature=0`, GPU):
 | Answer rate | 26/26 (100%) |
 | Answer correctness (max-sim recall ≥ 0.63) | **26/26 (100%)** |
 | Correct refusals (no hallucination) | **11/11 (100%)** |
-| Response time | avg. ~5.6 s (GPU, RTX 4060) |
+| Response time | avg. ~6.0 s (GPU, RTX 4060) |
 
 **Answer correctness** is scored *reference-free of length*: the answer is split into sentences and,
 for each reference sentence, the maximum cosine similarity over the answer's sentences is taken
@@ -165,6 +211,7 @@ rag/                          core package (run modules with: python -m rag.<nam
 ├── evaluate.py               automated evaluation (recall-oriented correctness metric)
 ├── telemetry.py              per-query stage timings → data/telemetry.jsonl
 ├── app.py                    Streamlit web UI
+├── api.py                    FastAPI HTTP service (wraps answer_query; stateless, one-time model load)
 └── __main__.py               `python -m rag` → CLI entry point
 scripts/prepare_dataset.py    downloads the official docs from GitHub (raw + API, no scraping)
 knowledge_bases/foundry/      documents/ (official docs) + eval/ (question set + before/after evidence)
@@ -177,8 +224,10 @@ data/                         generated database (gitignored; created by python 
 
 - **Latency:** ~5–7 s per answer on GPU. Retrieval is fast (~0.5 s); the cost is the reranker
   (CPU), the parent-document context, and generating richer, code-block answers.
-- **Single-turn:** the assistant answers each question independently — conversation history is not
-  yet sent to the model, so follow-ups like "and on Linux?" aren't resolved against prior turns.
+- **Meta follow-ups:** conversation history is used to resolve references so a follow-up retrieves the
+  right documents, but each answer is generated single-turn from freshly retrieved context — so a
+  follow-up that operates on the previous *answer* itself ("shorten that", "explain it more simply")
+  is weaker than one that asks a new question.
 - **Small-model reading limits:** answers always come from the retrieved context, but a 3.8B model
   can occasionally misread which part of a large context answers the question.
 - **Language:** the knowledge base is English, so the prompt and questions are English.

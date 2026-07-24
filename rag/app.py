@@ -1,10 +1,10 @@
 """
-Streamlit web arayüzü — CLI ile aynı pipeline (answer_query + streaming callback).
+Streamlit arayüzü — CLI ile aynı pipeline (answer_query + streaming).
 
 Çalıştırma:  python -m streamlit run rag/app.py   (repo kökünden)
 
-Konuşma geçmişi sadece görüntüleme amaçlıdır — modele geçmiş gönderilmez
-(tek-tur Q&A, conversational memory kapsam dışı).
+Geçmiş st.session_state.history'de tutuluyor; hem ekranda gösteriliyor hem de takip sorusunu
+bağımsızlaştırmak (condensation) için answer_query'ye veriliyor. Cevap her zaman tek-tur üretilir.
 """
 import os
 import sys
@@ -16,7 +16,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 
 from rag.core import answer_query, load_chat_client
-from rag.retrieval import get_top_chunks
 
 st.set_page_config(page_title="Local RAG Assistant", page_icon="📚")
 
@@ -33,7 +32,7 @@ st.title("📚 Foundry Local Documentation Assistant")
 st.caption(
     "Answers from the official Foundry Local documentation — running on Foundry Local, fully "
     "offline, with source attribution, and refusing to guess when the docs don't have the answer "
-    '(e.g. "How do I install Foundry Local?").'
+    '(e.g. "Does Foundry Local integrate with Slack?").'
 )
 
 if "history" not in st.session_state:
@@ -62,15 +61,32 @@ if question:
             parts.append(text)
             placeholder.markdown("".join(parts) + "▌")
 
-        answer, sources = answer_query(question, chat_client, on_delta=on_delta)
+        # Şeffaflık paneli için modele giden gerçek sorgu ve chunk'ları yakala. Takip sorusu
+        # condense edildiyse burada ham soru değil condense edilmiş hali görünüyor.
+        retrieval: dict = {}
+
+        def on_retrieval(search_query: str, chunks: list) -> None:
+            retrieval["query"] = search_query
+            retrieval["chunks"] = chunks
+
+        # Geçmişi veriyoruz; takip sorusunu bağımsızlaştırmak için kullanılıyor (bu tur henüz eklenmedi)
+        answer, sources = answer_query(
+            question, chat_client, history=st.session_state.history,
+            on_delta=on_delta, on_retrieval=on_retrieval,
+        )
         placeholder.markdown(answer)
 
         if sources:
             st.caption("Sources: " + ", ".join(sources))
 
-        # Şeffaflık: modelin gördüğü chunk'lar (CLI'daki --verbose'un UI karşılığı)
+        # Modelin gördüğü chunk'lar (CLI'daki --verbose'un UI karşılığı). answer_query'nin kullandığı
+        # sorgu ve chunk'lar gösterilir, ikinci bir retrieval yapılmaz; takip sorusu condense edildiyse
+        # hangi sorguyla arandığı da burada görünür.
         with st.expander("🔍 Retrieval detail — the chunks the model saw"):
-            for i, chunk in enumerate(get_top_chunks(question), start=1):
+            search_query = retrieval.get("query")
+            if search_query and search_query != question:
+                st.caption(f"Follow-up rewritten for search: “{search_query}”")
+            for i, chunk in enumerate(retrieval.get("chunks", []), start=1):
                 st.markdown(f"**#{i} — {chunk['source']}** (similarity: {chunk['score']:.3f})")
                 st.text(chunk["content"][:400] + ("..." if len(chunk["content"]) > 400 else ""))
 

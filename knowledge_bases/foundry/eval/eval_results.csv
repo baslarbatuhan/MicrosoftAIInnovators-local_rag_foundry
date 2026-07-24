@@ -1,97 +1,21 @@
 type,question,expected_source,retrieved_sources,retrieval_hit,refused,answer_similarity,latency_s,answer
-answerable,What is Microsoft Foundry Local?,what-is-foundry-local.txt|product-repo__README.txt|concepts__foundry-local-architecture.txt,product-repo__README.txt|reference__reference-best-practice.txt|concepts__foundry-local-architecture.txt,True,False,0.875,7.62,"Microsoft Foundry Local is an end-to-end local AI solution designed for shipping production applications. It includes model acquisition, hardware acceleration, and inference within your app process through an SDK. The core product is the local AI runtime and SDK integrated directly into your application, with optional web server and CLI tools for development workflows. It is not intended for general-purpose model experimentation but for specific application scenarios with optimized models. Foundry Local is optimized for hardware-constrained devices with single-user access and does not provide server-oriented runtime capabilities like concurrent request handling or continuous batching."
-answerable,How do I install Foundry Local on Windows?,reference__reference-cli.txt|get-started.txt|how-to__how-to-use-foundry-local-cli.txt,reference__reference-cli.txt|how-to__how-to-use-foundry-local-cli.txt,True,False,0.961,5.44,"To install Foundry Local on Windows, open a terminal and run:
+answerable,What is Microsoft Foundry Local?,what-is-foundry-local.txt|product-repo__README.txt|concepts__foundry-local-architecture.txt,product-repo__README.txt|reference__reference-best-practice.txt|concepts__foundry-local-architecture.txt,True,False,0.889,8.84,"Microsoft Foundry Local is an end-to-end local AI solution designed for shipping production applications. It includes model acquisition, hardware acceleration, and inference within your app process through an SDK. The core product is the local AI runtime and SDK integrated directly into your application, with optional web server and CLI tools for development workflows. It is optimized for hardware-constrained devices with single-user inference, automatic hardware detection, KV-cache management, and model lifecycle handling. Foundry Local is not intended for server inference stacks or distributed, containerized, or multi-machine production deployments."
+answerable,How do I install Foundry Local on Windows?,reference__reference-cli.txt|get-started.txt|how-to__how-to-use-foundry-local-cli.txt,reference__reference-cli.txt|how-to__how-to-use-foundry-local-cli.txt,True,False,0.961,3.92,"To install Foundry Local on Windows, open a terminal and run:
 
 ```bash
 winget install Microsoft.FoundryLocal
 ```
 
-Make sure you have admin rights to install software. If you encounter a service connection error after installation, restart the Foundry Local service using:
-
-```bash
-foundry service restart
-```
-
-VERIFICATION:
-
-To verify the installation, run:
-
-```bash
-foundry --version
-```
-
-TIP:
-
-If you see a service connection error after installation, restart the Foundry Local service using:
-
-```bash
-foundry service restart
-```
-
-Remember, the CLI is a companion tool for exploration and management, and for building applications, use the Foundry Local SDK."
-answerable,Which CLI command lists the available models in the Foundry Local catalog?,reference__reference-cli.txt|cli-help-output.txt|how-to__how-to-use-foundry-local-cli.txt,how-to__how-to-use-foundry-local-cli.txt|reference__reference-cli.txt,True,False,0.968,8.92,`foundry model list`
-answerable,What does the --filter option of the foundry model list command do?,reference__reference-cli.txt,reference__reference-cli.txt,True,False,0.824,7.97,"The `--filter` option of the `foundry model list` command filters the displayed models based on specified criteria such as hardware device, execution provider, or intended use case. For example, using `--filter device=GPU` will list only the models that run on a graphics processing unit.
-
-Here is an example of how to use the `--filter` option:
-
-```bash
-foundry model list --filter device=GPU
-```
-
-This command will display all models that are designed to run on a GPU.
-
-Additionally, the context mentions that the `--filter` option supports wildcard matching with a `*` suffix, allowing for more flexible filtering. For instance:
-
-```bash
-foundry model list --filter alias=phi*
-```
-
-This command will list all models whose alias starts with ""phi"".
-
-In summary, the `--filter` option enables users to narrow down the list of available models according to specific attributes like the device they run on, the execution provider, or the task they are intended for.
-
-```plaintexts
-The `--filter` option of the `foundry model list` command filters the displayed models based on specified criteria such as hardware device, execution provider, or intended"
-answerable,What happens the first time you run foundry model list?,reference__reference-cli.txt,reference__reference-cli.txt|get-started.txt,True,False,0.762,5.15,"Foundry Local automatically downloads the relevant execution providers (EPs) for your machine's hardware configuration, and you see a progress bar indicating the download completion before the model list appears."
-answerable,Which pip packages do I need to install to generate embeddings with the Foundry Local Python SDK?,how-to__how-to-generate-embeddings.txt,how-to__how-to-generate-embeddings.txt|reference__reference-sdk-legacy.txt,True,False,0.791,3.82,"```bash
-pip install foundry-local-sdk==0.5.1
-```"
-answerable,Which inference engine does Foundry Local use to execute models?,concepts__foundry-local-architecture.txt,concepts__foundry-local-architecture.txt|how-to__how-to-use-foundry-local-cli.txt,True,False,0.831,3.52,ONNX Runtime is the inference engine that Executes models in Foundry Local.
-answerable,How do structured outputs work in Foundry Local?,product-repo__docs__Structured-Outputs.txt,product-repo__docs__Structured-Outputs.txt|tutorials__tutorial-build-chat-assistant.txt,True,False,0.87,7.53,"Structured outputs in Foundry Local work by using grammars to guide the decoding loop, allowing for constrained decoding. Users can specify the desired output format and tool choice through `response_format` and `tool_choice` parameters, respectively. These parameters can be set to automatically select between text-only, tool-call, or a specific tool-call output based on the provided grammars or schemas.
-
-Here's an example of how to set up structured outputs in a chat completion API call using Foundry Local:
-
-```py
-response = client.chat.completions.create(
-    model=manager.get_model_info(alias).id,
-    messages=input_list,
-    tools=tools,
-    stream=True,
-    response_format={""type"": ""lark_grammar""},
-    tool_choice={""type"": ""required""},
-)
-```
-
-In this example, the `response_format` is set to `""lark_grammar""`, which means the output will be guided by a user-provided LARK grammar. The `tool_choice` is set to `""required""`, indicating that"
-answerable,What major change happened in Foundry Local SDK version 0.8.0?,reference__reference-sdk-migration.txt,reference__reference-sdk-migration.txt,True,False,0.656,7.86,"In Foundry Local SDK version 0.8.0 and later, there was a shift towards a more object-orientated and composable API. The main entry point changed from static calls to a stateless HTTP API to methods on the `FoundryLocalManager` instance that maintain state about the service and models.
-
-Here are the changes in code blocks for clarity:
-
-Before 0.8.0:
-```csharp
-mgr = FoundryLocalManager();
-```
-
-After 0s.8.0:
-```csharp
-var config = Configuration(...);
-var mgr = await FoundryLocalManager.CreateAsync(config, logger);
-var mgrInstance = FoundryLocalManager.Instance;
-```
-
-Additionally, the context provided shows new methods for handling models, such as `GetModelAsync`, `SelectVariant`, `DownloadAsync`, `LoadAsync`, and `UnloadAsync`, which are part of the object-orientated approach introduced in version 0.8.0."
-answerable,Does Foundry Local require a cloud account or Azure subscription to run models?,get-started.txt|what-is-foundry-local.txt,what-is-foundry-local.txt|product-repo__README.txt,True,False,0.736,4.18,"No, Foundry Local does not require a cloud account or Azure subscription to run models. It is designed to run entirely on the user's device."
-answerable,I just installed Foundry Local. How do I actually run a model?,reference__reference-cli.txt|cli-help-output.txt|how-to__how-to-use-foundry-local-cli.txt,reference__reference-cli.txt|how-to__how-to-use-foundry-local-cli.txt,True,False,0.836,9.03,"To run a model with Foundry Local, follow these steps:
+This command uses the package manager for Windows to install Foundry Local."
+answerable,Which CLI command lists the available models in the Foundry Local catalog?,reference__reference-cli.txt|cli-help-output.txt|how-to__how-to-use-foundry-local-cli.txt,how-to__how-to-use-foundry-local-cli.txt|reference__reference-cli.txt,True,False,0.968,4.76,`foundry model list`
+answerable,What does the --filter option of the foundry model list command do?,reference__reference-cli.txt,reference__reference-cli.txt,True,False,0.824,5.5,"The `--filter` option of the `foundry model list` command filters the displayed models based on specified criteria such as hardware device, execution provider, or intended use case. For example, using `--filter device=CPU` will list only the models that run on a central processing unit. The option supports key-value pairs for filtering, with possible values provided in the CONTEXT for attributes like device, provider, and task."
+answerable,What happens the first time you run foundry model list?,reference__reference-cli.txt,reference__reference-cli.txt|get-started.txt,True,False,0.817,5.61,"When you run `foundry model list` for the first time after installation, Foundry Local automatically downloads the relevant execution providers (EPs) for your machine's hardware configuration. You will see a progress bar indicating the download completion before the model list appears."
+answerable,Which pip packages do I need to install to generate embeddings with the Foundry Local Python SDK?,how-to__how-to-generate-embeddings.txt,how-to__how-to-generate-embeddings.txt|reference__reference-sdk-legacy.txt,True,False,0.85,3.75,pip install foundry-local-sdk==0.5.1
+answerable,Which inference engine does Foundry Local use to execute models?,concepts__foundry-local-architecture.txt,concepts__foundry-local-architecture.txt|how-to__how-to-use-foundry-local-cli.txt,True,False,0.837,4.01,ONNX Runtime is the inference engine that Executes AI models in Foundry Local.
+answerable,How do structured outputs work in Foundry Local?,product-repo__docs__Structured-Outputs.txt,product-repo__docs__Structured-Outputs.txt|tutorials__tutorial-build-chat-assistant.txt,True,False,0.884,5.89,"Structured outputs in Foundry Local work by utilizing grammars, such as LARK, to guide the decoding loop, enabling constrained decoding. Users can specify the desired output format and tool choice through `response_format` and `tool_choice` parameters, respectively. These parameters determine whether the output should be text-only, a tool call, or a combination, following a user-provided JSON schema or LARK grammar. This feature enhances the assistant's ability to maintain context and generate contextually relevant responses across multiple exchanges."
+answerable,What major change happened in Foundry Local SDK version 0.8.0?,reference__reference-sdk-migration.txt,reference__reference-sdk-migration.txt,True,False,0.656,5.94,"In Foundry Local SDK version 0.8.0 and later, there was a shift towards a more object-orientated and composable API. The main entry point changed from static calls to a stateless HTTP API to methods on the `FoundryLocalManager` instance that maintain state about the service and models."
+answerable,Does Foundry Local require a cloud account or Azure subscription to run models?,get-started.txt|what-is-foundry-local.txt,what-is-foundry-local.txt|product-repo__README.txt,True,False,0.736,4.22,"No, Foundry Local does not require a cloud account or Azure subscription to run models. It is designed to run entirely on the user's device with all operations managed locally."
+answerable,I just installed Foundry Local. How do I actually run a model?,reference__reference-cli.txt|cli-help-output.txt|how-to__how-to-use-foundry-local-cli.txt,reference__reference-cli.txt|how-to__how-to-use-foundry-local-cli.txt,True,False,0.829,13.19,"To run a model with Foundry Local, follow these steps:
 
 1. Install Foundry Local if you haven't already, using your operating system's package manager. For example, on Windows, you can use:
 
@@ -124,38 +48,91 @@ foundry service restart
 foundry model list
 ```
 
-5. To start an interactive chat session with a model, use the `foundry model run` command followed by the model name:
+5. To start an interactive chat session with a model, use the `foundry model run` command followed by the model name. For example:
 
 ```bash
 foundry model run phi-4-mini
 ```
 
-Replace `phi-4-mini` with the actual model name you wish to interact with.
+Replace `phi-4-mini` with the actual model name you wish to run.
 
-6. If you want to pre-download a model to the"
-answerable,I have an NVIDIA GPU - does Foundry Local use it automatically?,what-is-foundry-local.txt|reference__reference-cli.txt|how-to__how-to-use-foundry-local-cli.txt,what-is-foundry-local.txt|concepts__foundry-local-architecture.txt|reference__reference-cli.txt,True,False,0.8,5.63,"Yes, when you have an NVIDIA GPU available, Foundry Local automatically selects the best GPU model for inference."
-answerable,Can I run my own model from Hugging Face instead of the catalog ones?,how-to__how-to-compile-hugging-face-models.txt,concepts__foundry-local-architecture.txt|how-to__how-to-compile-hugging-face-models.txt,True,False,0.825,6.4,"Yes, you can run your own model from Hugging Face in Foundry Local. The CONTEXT states:
+6. If you want to pre-download a model to the local cache for later use, run:
 
-```python
-npm install foundry-local-sdk-winml openai
+```bash
+foundry model download phi-4-mini
 ```
 
-and
+7. To view models stored locally, use:
 
-```python
-pip install foundry-local-sdk openai
+```bash
+foundry cache list
 ```
 
-These commands suggest that you can use the Foundry Local SDK to compile and optimize your own models in the ONNX format, even when developing or shipping on Windows. The integration with the Windows ML runtime provides hardware acceleration, making it possible to run your own models efficiently."
-answerable,What are the different ways to connect my application to Foundry Local?,how-to__how-to-integrate-with-inference-sdks.txt|reference__reference-rest.txt|concepts__foundry-local-architecture.txt,reference__reference-cli.txt|concepts__foundry-local-architecture.txt,True,False,0.809,6.36,"1. Embed the Foundry Local Core API directly into your application, which is a platform-specific native library that your application loads in-process.
-2. Install and launch Open WebUI, then connect it to Foundry Local by enabling **Direct Connections** in Open WebUI's **Admin Settings** > **Connections**, adding a new connection in **Manage Direct Connections**, setting the **URL** to `http://localhost:PORT/v1` (replace `PORT` with the actual port number), and setting the **Auth** to **None**.
-3. Run the command specific to your operating system to upgrade Foundry Local:
-   - **Windows**: `winget upgrade --id Microsoft.FoundryLocal`
-   - **macOS**: `brew upgrade foundrylocal`
+8. To check the current cache location, execute:
 
-These steps outline how to integrate Foundry Local into your application, whether through direct API embedding or using Open WebUI for a browser-based interface."
-answerable,Which programming languages does the Foundry Local SDK support?,includes__sdk-reference__python.txt|includes__sdk-reference__javascript.txt|includes__sdk-reference__rust.txt|reference__reference-sdk-current.txt|what-is-foundry-local.txt|concepts__foundry-local-architecture.txt,tutorials__tutorial-build-rag-app.txt|what-is-foundry-local.txt|concepts__foundry-local-architecture.txt,True,False,0.898,4.06,"The Foundry Local SDK supports C#, JavaScript, Python, and Rust."
-answerable,How can I make the model return output in a specific structured format?,product-repo__docs__Structured-Outputs.txt,tutorials__tutorial-build-voice-to-text-note-taker.txt|product-repo__docs__Structured-Outputs.txt,True,False,0.75,7.85,"To make the model return output in a specific structured format, you can set the `response_format` and `tool_choice` parameters in your API call. Here is how you can specify a structured output using Lark grammar:
+```bash
+foundry cache location
+```
+
+9. To remove a model from the cache, use:
+
+```bash
+foundry cache remove phi-4-mini
+```
+
+10. To change the cache directory, run:
+
+```bash
+foundry cache cd /path/to/new/cache
+```
+
+11. To verify the Foundry Local service is running and get the local endpoint URL, use:
+
+```bash
+foundry service status
+```
+
+If the service isn't responding, restart it:
+
+```bash
+foundry service restart
+```
+
+Remember to replace `phi-4-mini` with the actual model name you are interested in running. The specific model name can be found in the output of `foundry model list` after installation."
+answerable,I have an NVIDIA GPU - does Foundry Local use it automatically?,what-is-foundry-local.txt|reference__reference-cli.txt|how-to__how-to-use-foundry-local-cli.txt,what-is-foundry-local.txt|concepts__foundry-local-architecture.txt|reference__reference-cli.txt,True,False,0.8,5.56,"Yes, when you have an NVIDIA GPU available, Foundry Local automatically selects the best GPU model for inference."
+answerable,Can I run my own model from Hugging Face instead of the catalog ones?,how-to__how-to-compile-hugging-face-models.txt,concepts__foundry-local-architecture.txt|how-to__how-to-compile-hugging-face-models.txt,True,False,0.761,6.81,"Yes, you can run your own model from Hugging Face on Foundry Local. The CONTEXT provides instructions for compiling and optimizing your own models in the ONNX format, and it also mentions that you're not limited to models in the Foundry Catalog. For details on compiling your own Hugging Face models, you can refer to the provided source: [Compile Hugging Face models to run on Foundry Local](../how-to/how-to-compile-hugging-face-models.md). The CONTEXT includes a code snippet for initializing the Foundry Local SDK with a custom model cache directory, which implies that you can point it to your own compiled model."
+answerable,What are the different ways to connect my application to Foundry Local?,how-to__how-to-integrate-with-inference-sdks.txt|reference__reference-rest.txt|concepts__foundry-local-architecture.txt,reference__reference-cli.txt|concepts__foundry-local-architecture.txt,True,False,0.818,8.43,"To connect your application to Foundry Local, you can use the following methods:
+
+1. Start a model and leave the terminal open using the command:
+```bash
+foundry model run qwen2.5-0.5b
+```
+2. Obtain your local endpoint URL by running:
+```bash
+foundry service status
+```
+3. Install and launch Open WebUI at `http://localhost:8080` in your browser.
+4. Connect Open WebUI to Foundry Local by following these steps:
+   - Go to **Settings** > **Admin Settings** > **Connections** and enable **Direct Connections**.
+   - Navigate to **Settings** > **Connections** > **Manage Direct Connections** and select **+**.
+   - Set **URL** to `http://localhost:PORT/v1` (replace `PORT` with the port from step 2) and **Auth** to **None**.
+   - Select **Save**.
+5. Choose a model from the dropdown and start chatting.
+
+Additionally, to upgrade Foundry Local, use the following commands for your operating system:
+
+- **Windows**:
+  ```bash
+  winget upgrade --id Microsoft.FoundryLocal
+  ```
+- **macOS**:
+  ```bash
+  brew upgrade foundrylocal
+  ```
+
+These steps will allow your application to connect to Foundry Local for AI inference."
+answerable,Which programming languages does the Foundry Local SDK support?,includes__sdk-reference__python.txt|includes__sdk-reference__javascript.txt|includes__sdk-reference__rust.txt|reference__reference-sdk-current.txt|what-is-foundry-local.txt|concepts__foundry-local-architecture.txt,tutorials__tutorial-build-rag-app.txt|what-is-foundry-local.txt|concepts__foundry-local-architecture.txt,True,False,0.898,4.25,"The Foundry Local SDK supports C#, JavaScript, Python, and Rust."
+answerable,How can I make the model return output in a specific structured format?,product-repo__docs__Structured-Outputs.txt,tutorials__tutorial-build-voice-to-text-note-taker.txt|product-repo__docs__Structured-Outputs.txt,True,False,0.763,8.84,"To make the model return output in a specific structured format, you can set the `response_format` and `tool_choice` parameters in your API call. Here is an example using the Lark grammar format:
 
 ```py
 
@@ -165,30 +142,34 @@ tool_choice = ""auto""
 
 ```
 
-This configuration tells the model to generate output following a Lark grammar structure and to automatically choose the appropriate tool call if necessary.
+This configuration tells the model to generate output following the Lark grammar structure and automatically choose the appropriate tool for structuring the output.
 
-If you want to specify a particular JSON schema for the output, use:
-
-```py
-
-response_format = {""type"": ""json_schema"", ""json_schema"": json_schema}
-
-```
-
-Replace `json_schema` with the actual JSON schema you want the output to adhere to.
-
-For a specific Lark grammar, use:
+If you want to specify a particular tool, you can set `tool_choice` to a specific function:
 
 ```py
 
-response_format = {""type"": ""lark_grammar"", ""lark_grammar"": lark_grammar}
+response_format = {""type"": ""lark_grammar""}
+
+tool_choice = {""type"": ""function"", ""function"": {""name"": ""function_name""}}
 
 ```
 
-Replace `lark_grammar` with the actual Lark grammar string.
+Replace `""function_name""` with the actual function you want to call for structuring the output.
 
-Here is an example of how to add these settings to your"
-answerable,I'm finished using a model - how do I free the memory it's using?,cli-help-output.txt|reference__reference-cli.txt|concepts__foundry-local-architecture.txt|reference__reference-sdk-legacy.txt,concepts__foundry-local-architecture.txt|reference__reference-sdk-legacy.txt|tutorials__tutorial-build-voice-to-text-note-taker.txt,True,False,0.84,7.87,"To free the memory used by a model in Foundry Local, you need to unload the model. The process is described in the context as follows:
+For JSON-specific structured output, use:
+
+```py
+
+response_format = {""type"": ""json_object""} or {""type"": ""json_schema"", ""json_schema"": json_schema}
+
+tool_choice = ""none""
+
+```
+
+Here, `json_schema` should be replaced with the actual JSON schema you want the output to follow.
+
+Remember to replace these placeholders with the actual values relevant to your scenario when making the API call."
+answerable,I'm finished using a model - how do I free the memory it's using?,cli-help-output.txt|reference__reference-cli.txt|concepts__foundry-local-architecture.txt|reference__reference-sdk-legacy.txt,concepts__foundry-local-architecture.txt|reference__reference-sdk-legacy.txt|tutorials__tutorial-build-voice-to-text-note-taker.txt,True,False,0.84,11.73,"To free the memory used by a model in Foundry Local, you need to unload the model. The process is described in the context as follows:
 
 ```
 Downloading chat model: 100.00%
@@ -210,10 +191,23 @@ Summary:
 Done. Models unloaded.
 ```
 
-When you're finished using a model, you can unload it by calling the `unload_model()` method with the appropriate alias or model ID. Here's how you can do it in code:"
-answerable,Can I use the standard OpenAI client library to call Foundry Local?,how-to__how-to-integrate-with-inference-sdks.txt|reference__reference-rest.txt|how-to__how-to-use-tool-calling-with-foundry-local.txt,how-to__how-to-use-tool-calling-with-foundry-local.txt|includes__sdk-reference__python.txt,True,False,0.874,7.21,"Yes, you can use the standard OpenAI client library to call Foundry Local. The provided context includes an example of integrating the `FoundryLocalManager` with the OpenAI SDK to interact with a local model. The code demonstrates how to download, load, and unload a model using `FoundryLocalManager`, and then use the OpenAI client to send a chat completion request to the local model.
+When you're finished using a model, you can unload it by calling the `unload_model()` method with the appropriate alias or model ID. Here's how you would do it in code, according to the provided context:
 
-Here is the relevant code snippet from the context:
+```
+FoundryModelInfo model_info = get_model_info(alias_or_model_id)
+unload_model(model_info.alias, force=False)
+```
+
+This command will unload the model from memory, freeing up resources. The model weights remain in your local cache after unloading, which allows for faster subsequent loads without re-downloading.
+
+If you need to force the unload, even if the model is cached, you can set the `force` parameter to `True`:
+
+```
+unload_model(model_info.alias, force=True)
+```
+
+Remember, the exact code to unload a model may vary slightly depending on how you've implemented the SDK in your application, but the general process is to retrieve the model info and then call the `unload_model()` method with the appropriate parameters."
+answerable,Can I use the standard OpenAI client library to call Foundry Local?,how-to__how-to-integrate-with-inference-sdks.txt|reference__reference-rest.txt|how-to__how-to-use-tool-calling-with-foundry-local.txt,how-to__how-to-use-tool-calling-with-foundry-local.txt|includes__sdk-reference__python.txt,True,False,0.874,9.91,"Yes, you can use the standard OpenAI client library to call Foundry Local. The provided context includes an example of integrating the `FoundryLocalManager` with the OpenAI SDK to interact with a local model. Here is the relevant code snippet:
 
 ```python
 import openai
@@ -235,107 +229,121 @@ model.load()
 
 manager.start_web_service()
 
-client"
-answerable,How does tool (function) calling work with Foundry Local?,how-to__how-to-use-tool-calling-with-foundry-local.txt,how-to__how-to-use-tool-calling-with-foundry-local.txt|tutorials__tutorial-build-tool-calling-assistant.txt,True,False,0.794,6.9,"Tool calling with Foundry Local works by prompting the model with definitions of available tools and a text prompt, allowing the model to determine which tools to call and with what input data. The application then executes these tools and integrates their results into subsequent model prompts to answer the user's query.
+client = openai.OpenAI(
+    base_url=f""{manager.urls[0].rstrip('/')}/v1"",
+    api_key=""local""
+)
 
-Here are the key steps in the tool calling loop:
+stream = client.chat.completions.create(
+    model=model.id,
+    messages=[{""role"": ""user"", ""content"": ""Why is the sky blue?""}],
+    stream=True
+)
 
-1. Detect tool calls by checking `response.Choices[0].Message.ToolCalls`.
-2. Execute the function by parsing the arguments and calling the local function.
-3. Return the result by adding a message with the role `tool` and the corresponding `ToolCallId`.
-4. The model uses the tool result to generate a natural response.
+for chunk in stream:
+    if chunk.choices[0].delta.content is not None:
+        print(chunk.choices[0].delta.content, end="""", flush=True)
+```
 
-To set up a project for tool calling, you would:
+In this example, the `FoundryLocalManager` is initialized with the configuration for a local Foundry service, and a model is downloaded, loaded, and then used to stream chat completions with the standard OpenAI client library."
+answerable,How does tool (function) calling work with Foundry Local?,how-to__how-to-use-tool-calling-with-foundry-local.txt,how-to__how-to-use-tool-calling-with-foundry-local.txt|tutorials__tutorial-build-tool-calling-assistant.txt,True,False,0.802,5.49,"Tool calling with Foundry Local involves prompting the model with definitions of available tools, allowing the model to determine which tools to call and with what input data. The application then executes these tools and integrates their results into subsequent model prompts to answer user queries. This is done using the Foundry Local CLI, where tool definitions are added as JSON schemas, and C# methods are implemented to execute these tools. When the model identifies a need for a tool, it sends a tool call request, which the application handles by extracting the function name and arguments, executing the local function, and returning the result to the model. The model then uses this result to generate a natural response."
+answerable,How do I convert a recorded audio file to text?,how-to__how-to-transcribe-audio.txt|how-to__how-to-live-transcribe-audio.txt,how-to__how-to-transcribe-audio.txt|tutorials__tutorial-build-voice-to-text-note-taker.txt,True,False,0.671,11.69,"To transcribe a recorded audio file to text using Foundry Local, follow these steps for each supported programming environment:
 
-- Install the required .NET SDK and packages, including Foundry Local and OpenAI SDK.
-- Define tool schemas in `Program.cs` with `name`, `description`, and `parameters`.
-- Implement the corresponding C# methods for each tool.
-- Initialize the Foundry Local SDK, load a model, and send a message that the model can answer by calling a tool.
-
-Here is"
-answerable,How do I convert a recorded audio file to text?,how-to__how-to-transcribe-audio.txt|how-to__how-to-live-transcribe-audio.txt,how-to__how-to-transcribe-audio.txt|tutorials__tutorial-build-voice-to-text-note-taker.txt,True,False,0.682,7.07,"To transcribe a recorded audio file to text using Foundry Local, follow these steps for each supported programming language:
-
-### For .NET (C#)
-
-1. Ensure .NET 8.0 SDK or later is installed on your Windows machine.
-2. Clone the Foundry Local samples repository and navigate to the `audio-transcription-example` directory:
-
-    ```bash
-    git clone https://github.com/microsoft-foundry/foundry-samples.git
-    cd foundry-samples/samples/csharp/foundry-local/audio-transcription-example
-    ```
-
-3. Add the necessary packages for Foundry Local and OpenAI:
-
-    ```bash
-    dotnet add package Microsoft.AI.Foundry.Local
-    dotnet add package OpenAI
-    ```
-
+### .NET (C#)
+1. Ensure .NET 8.0 SDK or later is installed.
+2. Clone the foundry-samples repository and navigate to the `audio-transcription-example` directory:
+   ```bash
+   git clone https://github.com/microsoft-foundry/foundry-samples.git
+   cd foundry-samples/samples/csharp/foundry-local/audio-transcription-example
+   ```
+3. Add the required packages for Foundry Local and OpenAI:
+   ```bash
+   dotnet add package Microsoft.AI.Foundry.Local
+   dotnet add package OpenAI
+   ```
 4. Run the application with the path to your audio file as an argument:
+   ```bash
+   dotnet run -- path/to/audio.mp3
+   ```
 
-    ```bash0
-    dotnet run -- path/to/audio.mp3
-    ```
+### Node.js
+1. Install Node.js version 20 or later.
+2. Clone the foundry-samples repository and navigate to the `tutorial-voice-to-text` directory:
+   ```bash
+   git clone https://github.com/microsoft-foundry/foundry-samples.git
+   cd foundry-samples/samples/javascript/foundry-local/tutorial-voice-to-text
+   ```
+3. Install the Foundry Local SDK and OpenAI packages:
+   ```bash
+   npm install foundry-local-sdk-winml openai
+   ```
+4. Run the application with the path to your audio file as an argument:
+   ```bash
+   node app.js path/to/audio.mp3
+   ```
 
-### For Node.js
-
-1. Install Node.js 20 or later and then install the Foundry Local SDK and OpenAI packages:"
-answerable,Does Foundry Local work with LangChain?,how-to__how-to-use-langchain-with-foundry-local.txt,concepts__foundry-local-architecture.txt|what-is-foundry-local.txt|how-to__how-to-use-langchain-with-foundry-local.txt,True,False,0.813,4.03,"Yes, Foundry Local works with LangChain. The context provided includes a guide on building a translation app by using the Foundry Local SDK and LangChain, indicating that they can be integrated for such purposes."
-answerable,"When I use Foundry Local, is any of my data sent to the cloud?",what-is-foundry-local.txt|get-started.txt|concepts__foundry-local-architecture.txt,what-is-foundry-local.txt,True,False,0.797,3.6,"No, when you use Foundry Local, none of your data is sent to the cloud. The CONTEXT states, ""User data never leaves the device,"" and ""Your app works offline."""
-answerable,Can I stream the chat response token by token instead of waiting for the full answer?,get-started.txt|how-to__how-to-integrate-with-inference-sdks.txt|tutorials__tutorial-build-chat-assistant.txt,tutorials__tutorial-build-chat-assistant.txt,True,False,0.711,7.62,"Yes, you can stream the chat response token by token by replacing the `CompleteChatAsync` call with `CompleteChatStreamingAsync` as shown in the provided context. The updated conversation loop in the `Program.cs` file demonstrates this streaming approach, where each token of the response is printed as it's generated, making the assistant feel more responsive.
-
-Here is the relevant code snippet from the context:
+### Python
+1. Install Python 3.11 or later.
+2. Clone the foundry-samples repository and navigate to the `tutorial-voice-to-text` directory:
+   ```bash
+   git clone https://github.com/microsoft-foundry/foundry-samples.git
+   cd foundry-samples/samples/javascript/foundry-local/tutorial-voice-to-text
+   ```
+3. Install the Foundry Local SDK and OpenAI packages:
+   ```bash
+   npm install foundry-local-sdk openai
+   ```"
+answerable,Does Foundry Local work with LangChain?,how-to__how-to-use-langchain-with-foundry-local.txt,concepts__foundry-local-architecture.txt|what-is-foundry-local.txt|how-to__how-to-use-langchain-with-foundry-local.txt,True,False,0.804,9.32,"Yes, Foundry Local works with LangChain. The context provided includes a section on integrating Foundry Local with LangChain to build a translation app, demonstrating that they can be used together. The integration process involves using the Foundry Local SDK and installing the LangChain package with OpenAI support. The context also provides a step-by-step guide, including cloning a sample repository and running a Python script to see the translation in action.
 
 ```bash
-dotnet run
-```
-
-```
-You: What is photosynthesis?
-Assistant: Photosynthesis is the process plants use to convert sunlight, water, and carbon
-dioxide into glucose and oxygen. It mainly happens in the leaves, inside structures
-called chloroplasts.
-
-You: Why is it important for other living things?
-Assistant: It's essential because photosynthesis produces the oxygen that most living things
-breathe. It also forms the base of the food chain — animals eat plants or eat other
-animals that depend on plants for energy.
-
-You: quit
-Model unloaded. Goodbye!
-```
-
-In this example, the assistant's responses are shown as they"
-answerable,Is there a tutorial for building a RAG (retrieval-augmented generation) app?,tutorials__tutorial-build-rag-app.txt,tutorials__tutorial-build-rag-app.txt,True,False,0.858,8.36,"Yes, there is a tutorial for building a RAG application as stated in the CONTEXT:
-
-- The CONTEXT provides a tutorial titled ""Build a RAG application"" from a source called `tutorials__tutorial-build-rag-app.txt`.
-- It outlines steps to set up a project, install the Foundry Local SDK, create a knowledge base, generate embedds, search for relevant documents, generate answers, and clean up resources.
-
-Here are the CLI commands and Python code from the CONTEXT used in the tutorial:
-
-```python
 pip install foundry-local-sdk-winml openai
+pip install foundry-local-sdk openai
 ```
 
 ```python
-documents = [
-    ""Foundry Local runs AI models directly on your device without cloud connectivity."",
-    ""The Foundry Local SDK supports Python, C#, JavaScript, and Rust."",
-    ""Embedding models convert text into numerical vectors for similarity search."",
-    ""Foundry Local uses ONNX Runtime for efficient model inference on CPUs and GPUs."",
-    ""The model catalog provides pre-optimized models that you can download and run locally."",
-    ""Retrieval-augmented generation grounds model responses in your"
-answerable,Is the Windows setup different from other platforms?,how-to__how-to-integrate-with-inference-sdks.txt|get-started.txt|concepts__foundry-local-architecture.txt,reference__reference-sdk-current.txt|product-repo__README.txt|concepts__foundry-local-architecture.txt,True,False,0.783,6.08,"Yes, the Windows setup for Foundry Local includes integration with WinML for execution provider registration, which is specific to Windows. This involves sourcing hardware-matched execution provider plugins from the OS and Windows Update, registering them with ONNX Runtime, and handling driver compatibility. This process is not present on Linux and macOS, where the Core API registers execution providers directly with ONNX Runtime without a platform intermediary."
-answerable,Does Foundry Local run as a separate service or as part of my application?,concepts__foundry-local-architecture.txt|product-repo__README.txt,concepts__foundry-local-architecture.txt|what-is-foundry-local.txt,True,False,0.647,3.99,"Foundry Local runs as part of your application. It is an end-to-end local AI solution that ships as a single native library inside your application, eliminating the need for a separate service or daemon."
-unanswerable,What does a Foundry Local subscription cost per month?,,,,True,,3.29,I don't have that information.
-unanswerable,When will Foundry Local be released for Android?,,,,True,,3.56,I don't have that information.
-unanswerable,How many engineers work on the Foundry Local team at Microsoft?,,,,True,,3.37,I don't have that information.
-unanswerable,What was the release date of Foundry Local version 0.1?,,,,True,,5.2,I don't have that information.
-unanswerable,Which GPU cluster did Microsoft use to train phi-3.5-mini?,,,,True,,4.86,I don't have that information.
-unanswerable,What is the internal Microsoft codename for the Foundry Local project?,,,,True,,3.93,The CONTEXT does not provide the internal Microsoft codename for the Foundry Local project.
-unanswerable,Does Foundry Local integrate with Slack?,,,,True,,3.44,I don't have that information.
-unanswerable,Which company did Microsoft acquire to create Foundry Local?,,,,True,,3.58,I don't have that information.
-unanswerable,Is there an official Java SDK for Foundry Local?,,,,True,,3.64,I don't have that information.
-unanswerable,Can I fine-tune or train a model using Foundry Local?,,,,True,,3.94,I don't have that information.
-unanswerable,Does Foundry Local support image-generation models such as Stable Diffusion?,,,,True,,5.15,"I don't have that information. The provided context does not mention image-generation models like Stable Diffusion. It discusses Foundry Local's support for specific platforms and its focus on single-user inference with automatic hardware detection, KV-cache management, and model lifecycle handling, but it does not specify the types of models it supports, such as image-generation models."
+pip install langchain[openai]
+```
+
+The context further notes that Foundry Local automatically selects the most suitable model variant for the user's hardware, which is a key benefit when using it with LangChain for translation tasks.
+
+```bash
+python translation_app.py
+```
+
+This command runs the translation application, and the output confirms the successful integration, as it shows the translated text.
+
+```text
+Translating 'I love to code.' to French...
+Response: <translated text>
+```
+
+The context also includes a similar setup for JavaScript, indicating that Foundry Local can work with LangChain in that programming environment as well.
+
+```bash
+git clone https://github.com/microsoft-foundry/foundry-samples.git
+cd foundry-samples/samples/javascript/foundry-local/langchain-integration-example
+```
+
+In summary, the context provided confirms that Foundry Local is compatible with LangChain for building translation applications."
+answerable,"When I use Foundry Local, is any of my data sent to the cloud?",what-is-foundry-local.txt|get-started.txt|concepts__foundry-local-architecture.txt,what-is-foundry-local.txt,True,False,0.687,3.54,"No, your data never leaves the device when using Foundry Local."
+answerable,Can I stream the chat response token by token instead of waiting for the full answer?,get-started.txt|how-to__how-to-integrate-with-inference-sdks.txt|tutorials__tutorial-build-chat-assistant.txt,tutorials__tutorial-build-chat-assistant.txt,True,False,0.765,5.72,"Yes, you can stream the chat response token by token instead of waiting for the full answer by using the `CompleteChatStreamingAsync` call, as suggested in the context. The context provides an example of how to update the conversation loop to use streaming:
+
+```bash
+CompleteChatStreamingAsync(history)
+```
+
+This method accumulates the full response so it can be added to the conversation history after the stream completes, making the assistant feel more responsive."
+answerable,Is there a tutorial for building a RAG (retrieval-augmented generation) app?,tutorials__tutorial-build-rag-app.txt,tutorials__tutorial-build-rag-app.txt,True,False,0.905,6.87,"Yes, according to the provided CONTEXT from the tutorial ""Build a RAG application"" in the text file `tutorials__tutorial-build-rag-app.txt`, there is a tutorial for building a RAG application. The tutorial guides you through setting up a project, installing the Foundry Local SDK, creating a knowledge base, generating embedds for documents, searching for relevant documents, generating answers grounded in retrieved context, and cleaning up resources. It also includes specific instructions for Windows development and code snippets for initializing the SDK and loading an embedding model."
+answerable,Is the Windows setup different from other platforms?,how-to__how-to-integrate-with-inference-sdks.txt|get-started.txt|concepts__foundry-local-architecture.txt,reference__reference-sdk-current.txt|product-repo__README.txt|concepts__foundry-local-architecture.txt,True,False,0.783,6.12,"Yes, the Windows setup for Foundry Local includes integration with WinML for execution provider registration, which is specific to Windows. This involves sourcing hardware-matched execution provider plugins from the OS and Windows Update, registering them with ONNX Runtime, and handling driver compatibility. This process is not required on Linux and macOS, where the SDK registers execution providers directly with ONNX Runtime."
+answerable,Does Foundry Local run as a separate service or as part of my application?,concepts__foundry-local-architecture.txt|product-repo__README.txt,concepts__foundry-local-architecture.txt|what-is-foundry-local.txt,True,False,0.638,4.46,"Foundry Local runs as part of your application. It is an end-to-end local AI solution that integrates into your application as a single native library, which your application loads in-process and interacts with through language-specific SDKs. There is no separate service or backend infrastructure required."
+unanswerable,What does a Foundry Local subscription cost per month?,,,,True,,3.52,I don't have that information.
+unanswerable,When will Foundry Local be released for Android?,,,,True,,3.79,I don't have that information.
+unanswerable,How many engineers work on the Foundry Local team at Microsoft?,,,,True,,4.02,"The provided CONTEXT does not contain specific information regarding the number of engineers working on the Foundry Local team at Microsoft. Therefore, the answer is: ""I don't have that information."""
+unanswerable,What was the release date of Foundry Local version 0.1?,,,,True,,5.92,"The provided CONTEXT does not contain specific information regarding the release date of Foundry Local version 0.1. Therefore, the answer is: ""I don't have that information."""
+unanswerable,Which GPU cluster did Microsoft use to train phi-3.5-mini?,,,,True,,5.57,"The CONTEXT does not provide specific information about which GPU cluster Microsoft used to train the phi-3.5-mini model. Therefore, the answer is: ""I don't have that information."""
+unanswerable,What is the internal Microsoft codename for the Foundry Local project?,,,,True,,4.58,"The internal Microsoft codename for the Foundry Local project is not provided in the given CONTEXT. To find this information, one would need to refer to internal documentation or sources not included in the provided text."
+unanswerable,Does Foundry Local integrate with Slack?,,,,True,,4.01,I don't have that information.
+unanswerable,Which company did Microsoft acquire to create Foundry Local?,,,,True,,3.87,I don't have that information.
+unanswerable,Is there an official Java SDK for Foundry Local?,,,,True,,4.06,I don't have that information.
+unanswerable,Can I fine-tune or train a model using Foundry Local?,,,,True,,4.13,I don't have that information.
+unanswerable,Does Foundry Local support image-generation models such as Stable Diffusion?,,,,True,,5.74,"I don't have that information. The provided context does not mention image-generation models like Stable Diffusion. It discusses Foundry Local's support for specific platforms and its focus on single-user inference with automatic hardware detection, KV-cache management, and model lifecycle handling, but it does not specify the types of models it supports, such as image-generation models. To answer this question, one would need to refer to the source material outside of the provided context."

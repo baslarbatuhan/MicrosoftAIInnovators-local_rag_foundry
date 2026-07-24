@@ -1,18 +1,17 @@
 """
-Hafif yerel telemetri: her sorgunun aşama sürelerini ve meta verisini
-data/telemetry.jsonl dosyasına bir JSON satırı olarak ekler.
+Hafif telemetri: her sorgunun aşama sürelerini ve meta verisini data/telemetry.jsonl'a
+bir JSON satırı olarak ekler.
 
-Neden var? Tek seferlik profilleme (retrieval 0.5s / prefill 12.5s / decode 0.8s)
-GPU keşfini doğurmuştu — bu modül o görünürlüğü kalıcı yapar: gecikme yeniden
-bozulursa "nerede?" sorusunun cevabı artık her zaman kayıtta.
+Amaç: gecikme bozulunca "nerede yavaşladı?" sorusunu her zaman kayıttan cevaplayabilmek.
+Aşamaları bu şekilde profilleyip GPU'ya geçmeye de karar vermiştik.
 
 Kullanım (pipeline içinden):
     telemetry.start_query(question)          # answer_query başında
     with telemetry.stage("embed"): ...       # aşamalar kendi süresini yazar
     telemetry.finish_query(refused=..., ...) # kaydı diske yazar
 
-Aktif kayıt yokken stage()/add() sessizce no-op — get_top_chunks() tek başına
-çağrıldığında (ör. evaluate.py'nin bağımsız retrieval ölçümü) çift kayıt oluşmaz.
+Aktif kayıt yokken stage()/add() sessizce hiçbir şey yapmaz, böylece get_top_chunks() tek
+başına çağrıldığında çift kayıt oluşmuyor.
 
 Kapatmak için: RAG_TELEMETRY=0
 Özet rapor:   python telemetry.py

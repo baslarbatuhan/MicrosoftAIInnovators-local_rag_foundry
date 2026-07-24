@@ -1,0 +1,234 @@
+question,search_query,condensed,retrieved,expected_source,retrieval_hit,refused,correct,latency_s,answer,scenario,kind
+How do I generate embeddings with Foundry Local?,How do I generate embeddings with Foundry Local?,False,how-to__how-to-generate-embeddings.txt|tutorials__tutorial-build-rag-app.txt,how-to__how-to-generate-embeddings.txt,True,False,True,14.78,"To generate embeddings with Foundry Local, follow these steps:
+
+1. Install Python 3.11 or later from the official Python website: https://www.python.org/downloads/
+
+2. Install the Foundry Local SDK by running:
+
+```bash
+pip install foundry-local-sdk
+```
+
+3. Clone the Foundry Local samples repository and navigate to the embeddings sample:
+
+```bash
+git clone https://github.com/microsoft-foundry/foundry-samples.git
+cd foundry-samples/samples/python/foundry-local/embeddings
+```
+
+4. Create a Python file named `app.py` and copy the provided code into it.
+
+5. Run the code by executing:
+
+```bash
+python app.py
+```
+
+If you encounter a `ModuleNotFoundError` for 'foundry_local_sdk', install the SDK by running:
+
+```bash
+pip install foundry-local-sdk
+```
+
+If you're developing or shipping on Windows, select the **Windows** tab and install the SDK using:
+
+```bash
+pip install foundry-local-sdk-winml openai
+```
+
+For C# applications, follow similar steps but use the provided C# code and run it with:
+
+```bash
+dotnet run
+```
+
+6. To generate document embeddings, create a file called `main.py` and add the provided code.
+
+7. Initialize the SDK, load an embedding model, and convert each document into a numerical vector:
+
+```python
+def main():
+    # Initialize the SDK
+    config = Configuration(app_name=""foundry_local_rag"")
+    FoundryLocalManager.initialize(config)
+    manager = FoundryLocalManager.instance
+
+    # Load the embedding model
+    embedding_model = manager.catalog.get_model(""qwen3-embedding-0.6b"")
+    embedding_model.download(
+        lambda p: print(f""\rDownloading embedding model: {p:.1f}%"", end="""", flush=True)
+    )
+    print()
+    embedding_model.load()
+    embedding_client = embedding_model.get_embedding_client()
+
+    # Embed all documents in a",coref_same_doc,standalone
+Can I do that in JavaScript?,Can I generate embeddings with Foundry Local in JavaScript?,True,how-to__how-to-generate-embeddings.txt,how-to__how-to-generate-embeddings.txt,True,False,True,5.1,"No, you cannot run the provided code in JavaScript as it is written for C# and Rust. The context gives separate instructions for generating text embeddings using Foundry Local in C# and Rust, each with its own setup and commands. For JavaScript, you would need to refer to the corresponding sample code in the `foundry-samples` GitHub repository, specifically the `foundry-local-sdk-js` package, and follow the instructions provided there. The commands and code provided in the context are specific to C# and Rust environments.",coref_same_doc,coref
+How do I use tool calling with Foundry Local?,How do I use tool calling with Foundry Local?,False,how-to__how-to-use-tool-calling-with-foundry-local.txt,how-to__how-to-use-tool-calling-with-foundry-local.txt,True,False,True,8.58,"To use tool calling with Foundry Local, follow these steps:
+
+1. Ensure you have the .NET 8.0 SDK or later installed. You can download it from the official Microsoft website: https://dotnet.microsoft.com/download/dotnet/8.0
+
+2. Clone the foundry-samples GitHub repository and navigate to the sample directory:
+
+```bash
+git clone https://github.com/microsoft-foundry/foundry-samples.git
+cd foundry-samples/samples/csharp/foundry-local/tool-calling-foundry-local-sdk
+```
+
+3. For Windows development or deployment, select the Windows tab and add the necessary packages:
+
+```bash
+dotnet add package Microsoft.AI.Foundry.Local.WinML
+dotnet add package OpenAI
+```
+
+Alternatively, add the following packages:
+
+```bash
+dotnet add package Microsoft.AI.Foundry.Local
+dotnet add package OpenAI
+```
+
+4. Read the Foundry Local SDK reference for more details on setting up your C# project with Foundry Local:
+
+```
+https://docs.microsoft.com/en-us/dotnet/fundamentals/artificial-intelligence/foundry/sdk-current
+```
+
+5. Use the Foundry Local CLI to run the `foundry model list` command to identify models that support tool calling. Look for the `tools` task in the `Task` column.
+
+6. When prompting the model, include a `tool choice` parameter to control how the model invokes the provided tools. This parameter should be sent alongside your tool definitions.
+
+The complete sample code for this process is available in the foundry-samples GitHub repository, specifically in the `foundry-local/tool-calling-foundry-local-sdk` directory.
+
+Remember, different models have varying capabilities with tool calling, but the above steps should guide you through using tool calling with Foundry Local.",coref_diff_doc,standalone
+Does it work with LangChain?,Does Foundry Local work with LangChain?,True,concepts__foundry-local-architecture.txt|how-to__how-to-use-langchain-with-foundry-local.txt|what-is-foundry-local.txt,how-to__how-to-use-langchain-with-foundry-local.txt,True,False,True,7.93,"Yes, the context provided indicates that it works with LangChain. Specifically, the text states, ""This article shows you how to build a translation app by using the Foundry Local SDK and [LangChain](https://www.langchain.com/langchain)."" It also includes a step-by-step guide on setting up a Python environment for building a translation app using Foundry Local and LangChain, and it mentions the successful execution of a translation command, outputting a ""Response:"" line with the translated text.
+
+Here is the relevant code snippet from the context:
+
+```bash
+pip install langchain[openai]
+```
+
+```python
+# translation_app.py
+# Reference: [Foundry Local SDK reference](../../reference/reference-sdk-current.md)
+# Reference: [Get started with Foundry Local](../../get-started.md)
+
+# Code snippet for setting up and running the translation app
+```
+
+```bash
+python translation_app.py
+```
+
+```text
+Translating 'I love to code.' to French...
+Response: <translated text>
+```
+
+This demonstrates that the setup and execution of a translation app using Foundry Local and LangChain are functional as described in the context.",coref_diff_doc,coref
+How do I use tool calling with Foundry Local?,How do I use tool calling with Foundry Local?,False,how-to__how-to-use-tool-calling-with-foundry-local.txt,how-to__how-to-use-tool-calling-with-foundry-local.txt,True,False,True,8.49,"To use tool calling with Foundry Local, follow these steps:
+
+1. Ensure you have the .NET 8.0 SDK or later installed. You can download it from the official Microsoft website: https://dotnet.microsoft.com/download/dotnet/8.0
+
+2. Clone the foundry-samples GitHub repository and navigate to the sample directory:
+
+```bash
+git clone https://github.com/microsoft-foundry/foundry-samples.git
+cd foundry-samples/samples/csharp/foundry-local/tool-calling-foundry-local-sdk
+```
+
+3. For Windows development or deployment, select the Windows tab and add the necessary packages:
+
+```bash
+dotnet add package Microsoft.AI.Foundry.Local.WinML
+dotnet add package OpenAI
+```
+
+Alternatively, add the following packages:
+
+```bash
+dotnet add package Microsoft.AI.Foundry.Local
+dotnet add package OpenAI
+```
+
+4. Read the Foundry Local SDK reference for more details on setting up your C# project with Foundry Local:
+
+```
+https://docs.microsoft.com/en-us/dotnet/fundamentals/artificial-intelligence/foundry/sdk-current
+```
+
+5. Use the Foundry Local CLI to run the `foundry model list` command to identify models that support tool calling. Look for the `tools` task in the `Task` column.
+
+6. When prompting the model, include a `tool choice` parameter to control how the model invokes the provided tools. This parameter should be sent alongside your tool definitions.
+
+The complete sample code for this process is available in the foundry-samples GitHub repository, specifically in the `foundry-local/tool-calling-foundry-local-sdk` directory.
+
+Remember, different models have varying capabilities with tool calling, but the above steps should guide you through using tool calling with Foundry Local.",topic_switch,standalone
+What is Foundry Local?,What is Foundry Local?,False,product-repo__README.txt|what-is-foundry-local.txt,what-is-foundry-local.txt,True,False,True,5.45,"Foundry Local is an end-to-end local AI solution for shipping applications that runs entirely on the user's device, providing an SDK, a curated catalog of optimized models, and automatic hardware acceleration, all within a lightweight package. It ensures user data stays on the device, with immediate responses and offline functionality, without per-token costs or backend infrastructure maintenance. For enterprise-scale AI inference with Kubernetes-native operations and Azure Arc management, Foundry Local on Azure Local is an alternative option. The Foundry Local CLI is available for development workflows, but the core product is the local AI runtime and SDK integrated into the application. It is optimized for hardware-constrained devices with single-user access, not for server-oriented scenarios.",topic_switch,topic_switch
+How do I generate embeddings with Foundry Local?,How do I generate embeddings with Foundry Local?,False,how-to__how-to-generate-embeddings.txt|tutorials__tutorial-build-rag-app.txt,how-to__how-to-generate-embeddings.txt,True,False,True,11.4,"To generate embeddings with Foundry Local, follow these steps:
+
+1. Install Python 3.11 or later from the official Python website: https://www.python.org/downloads/
+
+2. Install the Foundry Local SDK by running:
+
+```bash
+pip install foundry-local-sdk
+```
+
+3. Clone the Foundry Local samples repository and navigate to the embeddings sample:
+
+```bash
+git clone https://github.com/microsoft-foundry/foundry-samples.git
+cd foundry-samples/samples/python/foundry-local/embeddings
+```
+
+4. Create a Python file named `app.py` and copy the provided code into it.
+
+5. Run the code by executing:
+
+```bash
+python app.py
+```
+
+If you encounter a `ModuleNotFoundError` for 'foundry_local_sdk', install the SDK by running:
+
+```bash
+pip install foundry-local-sdk
+```
+
+If you're developing or shipping on Windows, select the **Windows** tab and install the SDK using:
+
+```bash
+pip install foundry-local-sdk-winml openai
+```
+
+For C# applications, follow similar steps but use the provided C# code and run it with:
+
+```bash
+dotnet run
+```
+
+6. To generate document embeddings, create a file called `main.py` and add the provided code.
+
+7. Initialize the SDK, load an embedding model, and convert each document into a numerical vector:
+
+```python
+def main():
+    # Initialize the SDK
+    config = Configuration(app_name=""foundry_local_rag"")
+    FoundryLocalManager.initialize(config)
+    manager = FoundryLocalManager.instance
+
+    # Load the embedding model
+    embedding_model = manager.catalog.get_model(""qwen3-embedding-0.6b"")
+    embedding_model.download(
+        lambda p: print(f""\rDownloading embedding model: {p:.1f}%"", end="""", flush=True)
+    )
+    print()
+    embedding_model.load()
+    embedding_client = embedding_model.get_embedding_client()
+
+    # Embed all documents in a",grounding_refuse,standalone
+How much does that cost per month on Azure?,How much does the Foundry Local SDK cost per month on Azure?,True,product-repo__README.txt|what-is-foundry-local.txt,,,True,True,5.15,I don't have that information.,grounding_refuse,unanswerable_coref

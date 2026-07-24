@@ -1,10 +1,8 @@
 """
-Ingestion pipeline: aktif profilin doküman klasöründeki .txt dosyalarını okur,
-paragraf bazlı chunk'lara böler, her chunk için embedding üretir ve profilin
-SQLite veritabanına yazar. (Profil seçimi: config.py / RAG_PROFILE env var.)
+Ingestion pipeline: doküman klasöründeki .txt dosyalarını okur, markdown başlıklarına göre
+chunk'lara böler, her chunk için embedding üretir ve SQLite'a yazar.
 
-Yeniden çalıştırmak güvenlidir: tabloyu temizleyip doküman klasörünün
-güncel haline göre yeniden doldurur.
+Yeniden çalıştırmak güvenli: tabloyu sıfırlayıp klasörün güncel haline göre baştan dolduruyor.
 """
 import glob
 import json
@@ -22,30 +20,23 @@ from rag.config import (
 )
 
 MAX_CHUNK_CHARS = 800
-# Chunk taban boyutu: >0 ise ardışık küçük markdown bölümleri bu boyuta ulaşana kadar birleştirilir.
-# ❌ MIN_CHUNK_CHARS=200 DENENDI ve REDDEDİLDİ (2026-07-22): fragment'ları eledi ama küçük ODAKLI
-# chunk'ları da (ör. tek satırlık "pip install foundry-local-sdk openai" kod bloğu) çevre metinle
-# birleştirip embedding sinyalini SEYRELTTİ → "which pip packages" sorusu cevaplanır'dan reddet'e
-# düştü (cevaplama 15→14/16, doğruluk 14/15→12/14). Fragment boyutu tek başına "gürültü" (tarih
-# satırı) ile "sinyal" (kısa kod/cevap) arasında ayrım yapamıyor. Gürültü, hedefli DATE_LINE_RE
-# ile temizleniyor (aşağıda); genel min-merge kapalı. 0 = birleştirme yok (her bölüm kendi chunk'ı).
+# 0 = ardışık küçük bölümleri birleştirme, her bölüm kendi chunk'ı. Birleştirmeyi (min-merge)
+# denedik ama tek satırlık kod bloğu gibi kısa ama önemli chunk'ları çevre metinle karıştırıp
+# retrieval'ı zayıflattı. Gürültüyü boyuta göre değil hedefli (DATE_LINE_RE) temizliyoruz.
 MIN_CHUNK_CHARS = 0
 
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
 # Markdown link/tab sözdizimini sadeleştir: "[Windows](#tab/windows)" -> "Windows"
 LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")
-# prepare_foundry_dataset.py her dokümanın başına "(Doküman tarihi: MM/DD/YYYY)"
-# satırı ekliyor. Bu saf metadata — hiçbir sorunun cevabı değil. Chunk'a girerse
-# retrieval'da içeriksiz yarışıp modeli yanıltıyor (28 karakterlik tarih chunk'ı
-# "get started" sorusuna 0.83 skorla #1 dönüp modeli meta-cevaba/uydurmaya itiyordu).
-# Chunking sırasında bu satır atlanır (fragment/gürültü eleme sınıfının parçası).
+# Dataset hazırlama scripti her dokümanın başına "(Doküman tarihi: ...)" satırı ekliyor. Bu saf
+# metadata; chunk'a girerse içeriksiz olmasına rağmen retrieval'da öne çıkıp modeli yanıltıyordu.
+# Chunking sırasında atlıyoruz.
 DATE_LINE_RE = re.compile(r"^\(Doküman tarihi:.*\)$")
 
 
 def create_schema(conn: sqlite3.Connection) -> None:
-    # Tabloyu her ingest'te sıfırdan kur — ingest zaten tam yeniden dolduruyor,
-    # bu da şema değişikliklerinin (ör. heading_path kolonu eklenmesi) sorunsuz
-    # uygulanmasını sağlar (CREATE IF NOT EXISTS eski şemayı koruyup hata verirdi).
+    # Tabloyu her ingest'te sıfırdan kuruyoruz; ingest zaten baştan dolduruyor. Böylece şema
+    # değişiklikleri (yeni kolon vb.) sorunsuz uygulanıyor.
     conn.execute("DROP TABLE IF EXISTS documents")
     conn.execute("""
         CREATE TABLE documents (
@@ -56,9 +47,8 @@ def create_schema(conn: sqlite3.Connection) -> None:
             embedding TEXT NOT NULL  -- JSON-serialized vector
         )
     """)
-    # FTS5/BM25 keyword indeksi — hibrit retrieval (config.HYBRID_RETRIEVAL=True) BM25 adaylarını
-    # buradan çekip reranker havuzuna ekliyor (kesin terimleri yakalar). porter tokenizer:
-    # kelime köklerini eşler ("engine"/"engines", "list"/"lists").
+    # BM25 keyword indeksi — hybrid retrieval adayları buradan geliyor. porter tokenizer kelime
+    # köklerini eşliyor ("engine"/"engines", "list"/"lists").
     conn.execute("DROP TABLE IF EXISTS documents_fts")
     conn.execute("CREATE VIRTUAL TABLE documents_fts USING fts5(content, tokenize='porter')")
     conn.commit()
@@ -70,8 +60,8 @@ def read_document(path: str) -> tuple[str, str]:
         text = f.read()
 
     lines = text.split("\n", 2)
-    # İlk satır bir kaynak-URL başlığıysa ayır — İngilizce "Source:" ya da eski "Kaynak:"
-    # (mevcut korpus dosyaları "Kaynak:" ile başlıyor; kullanıcı dokümanları "Source:" kullanabilir).
+    # İlk satır kaynak URL'siyse ayır. Mevcut korpus "Kaynak:" kullanıyor, dışarıdan eklenen
+    # dosyalar "Source:" kullanabilir; ikisini de kabul ediyoruz.
     for prefix in ("Source:", "Kaynak:"):
         if lines[0].startswith(prefix):
             source_url = lines[0].removeprefix(prefix).strip()
@@ -85,19 +75,10 @@ def read_document(path: str) -> tuple[str, str]:
 
 
 def chunk_text(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
-    """Metni boş satırlara göre paragraflara ayırır, ardışık paragrafları
-    max_chars'ı aşmayacak şekilde birleştirerek chunk'lar oluşturur.
+    """Metni paragraflara ayırıp ardışık paragrafları max_chars'ı aşmadan birleştirir.
 
-    Overlap: yeni chunk, önceki chunk'ın SON paragrafıyla başlar. Hafta 5
-    değerlendirmesinde başlık/tarih satırlarının ("Required features:",
-    "Wednesday, April 3 - v0.2.7 Update") ait oldukları içerikten ayrı
-    chunk'lara düştüğü görüldü — overlap bu sınır kopmalarını yumuşatıyor.
-
-    Not: Başlık-farkındalıklı chunking (sondaki başlık satırlarını yeni chunk'a
-    taşıma) denendi ve GERİ ALINDI — bir soruyu iyileştirirken daha önce doğru
-    cevaplanan başka bir soruyu kaybettirdi (cevaplama 8/10 → 7/10). Chunk
-    düzeni değişiklikleri küçük soru setlerinde öngörülemez yan etkiler
-    yaratıyor; bilinen-iyi düzen korunuyor.
+    Overlap: yeni chunk önceki chunk'ın son paragrafıyla başlar. Böylece bir başlık ya da giriş
+    satırı içeriğinden ayrı bir chunk'a düştüğünde bağı kopmuyor.
     """
     paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 
@@ -110,8 +91,8 @@ def chunk_text(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
     for para in paragraphs:
         if current and current_len(current) + 2 + len(para) > max_chars:
             chunks.append("\n\n".join(current))
-            # Overlap: önceki chunk'ın son paragrafını yeni chunk'a taşı
-            # (sığıyorsa — tek başına max_chars'ı aşan dev paragrafları taşıma)
+            # Önceki chunk'ın son paragrafını yeni chunk'a taşı (sığıyorsa; tek başına
+            # max_chars'ı aşan dev paragrafları taşıma)
             last = current[-1]
             current = [last, para] if len(last) + 2 + len(para) <= max_chars else [para]
         else:
@@ -123,15 +104,13 @@ def chunk_text(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
 
 
 def chunk_markdown(body: str, max_chars: int = MAX_CHUNK_CHARS) -> list[dict]:
-    """Markdown başlık hiyerarşisine göre böler (semantic chunking + context enrichment).
+    """Markdown başlık hiyerarşisine göre böler.
 
     Her chunk {'heading_path', 'content'} döner:
-    - heading_path: "Doküman Başlığı > Bölüm > Alt bölüm" — chunk'ın belge içindeki konumu.
-      Embedding'e eklenince kullanıcının doğal sorusuyla dokümanın teknik dili arasındaki
-      boşluğu kapatır (ör. HF chunk'ı "Compile Hugging Face models > ..." ile başlar →
-      "kendi HF modelimi çalıştırabilir miyim?" sorusuyla eşleşir — Anthropic Contextual Retrieval).
+    - heading_path: "Doküman > Bölüm > Alt bölüm". Embedding'e eklenince kullanıcının doğal
+      sorusuyla dokümanın teknik dili arasındaki boşluğu kapatıyor.
     - content: bölümün ham gövdesi. Uzun bölümler paragraf bazlı alt-chunk'lara bölünür,
-      heading_path her alt-chunk'ta korunur.
+      heading_path her birinde korunur.
     """
     heading_stack: dict[int, str] = {}
     sections: list[tuple[str, str]] = []
@@ -160,8 +139,8 @@ def chunk_markdown(body: str, max_chars: int = MAX_CHUNK_CHARS) -> list[dict]:
             buf.append(line)
     flush()
 
-    # Ardışık küçük bölümleri MIN_CHUNK_CHARS tabanına ulaşana kadar birleştir (max'ı aşmadan).
-    # Fragment/gürültü chunk'ları eler; birleşenlerin ORTAK başlık-yolu chunk'ın path'i olur.
+    # Ardışık küçük bölümleri MIN_CHUNK_CHARS'a ulaşana kadar birleştir (max'ı aşmadan).
+    # Birleşen bölümlerin ortak başlık yolu chunk'ın path'i olur.
     chunks: list[dict] = []
     buf_paths: list[str] = []
     buf_texts: list[str] = []
@@ -186,7 +165,7 @@ def chunk_markdown(body: str, max_chars: int = MAX_CHUNK_CHARS) -> list[dict]:
         buf_texts.append(text)
         buf_len += len(text) + 2
         if buf_len >= MIN_CHUNK_CHARS:
-            emit_buffer()  # tabana ulaştı — fazla birleştirme (dilution) yapma
+            emit_buffer()  # tabana ulaştı, gereksiz birleştirme yapma
     emit_buffer()
     return chunks
 
@@ -233,9 +212,9 @@ def main():
         chunks = chunk_markdown(body)
         print(f"{filename}: {len(chunks)} chunk")
 
-        # Context enrichment: embedding = heading_path + content (contextual chunking). Doküman
-        # tarafı başlık-yoluyla zenginleştirilir, sorgu ham kalır — bu asimetri doğal soru ↔ teknik
-        # doküman boşluğunu index zamanında kapatır. content ham saklanır (LLM'e olduğu gibi verilir).
+        # Embedding için başlık yolu + içerik birlikte kullanılıyor, içerik ise ham saklanıyor
+        # (LLM'e olduğu gibi verilecek). Doküman tarafını başlıkla zenginleştirip sorguyu ham
+        # bırakmak, doğal soruyla teknik doküman arasındaki boşluğu arama sırasında kapatıyor.
         embed_texts = ["\n\n".join(p for p in (c["heading_path"], c["content"]) if p) for c in chunks]
         response = embed_client.generate_embeddings(embed_texts)
 

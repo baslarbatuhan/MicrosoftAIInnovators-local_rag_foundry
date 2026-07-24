@@ -1,17 +1,16 @@
 """
-Hafta 5 değerlendirme scripti: eval/ klasöründeki hazır soru setlerini
-answer_query() üzerinden çalıştırır ve şu metrikleri ölçer:
+Tek-turlu değerlendirme: eval/ klasöründeki hazır soru setlerini answer_query üzerinden çalıştırıp
+şu metrikleri ölçer:
 
   Cevaplanabilir sorular (single_passage_answer_questions.csv):
     - retrieval isabeti: beklenen kaynak dosya top_k chunk'lara geldi mi?
     - cevaplama: model reddetmeyip cevap verdi mi?
-    - cevap doğruluğu: model cevabı, dataset'teki referans cevaba semantik
-      olarak benziyor mu? (embedding cosine similarity >= SIM_THRESHOLD)
+    - cevap doğruluğu: cevap referansa benziyor mu (similarity >= SIM_THRESHOLD)?
   Cevaplanamaz sorular (no_answer_questions.csv):
-    - doğru reddetme: model "Bu bilgiye sahip değilim." dedi mi?
-  Performans: her soru için yanıt süresi (embedding + retrieval + generation).
+    - doğru reddetme: model "bilmiyorum" dedi mi?
+  Ayrıca her soru için yanıt süresi.
 
-Sonuçlar konsola özet olarak yazılır ve eval/eval_results.csv'ye kaydedilir.
+Özet konsola yazılır, detay eval/eval_results.csv'ye kaydedilir.
 """
 import csv
 import os
@@ -24,13 +23,9 @@ from rag.retrieval import EMBEDDING_MODEL_ALIAS, cosine_similarity, get_manager,
 
 RESULTS_PATH = os.path.join(EVAL_DIR, "eval_results.csv")
 
-# Cevap doğruluğu eşiği: recall-odaklı max-sim (answer_similarity) bu değerin üstündeyse "doğru".
-# YENİDEN KALİBRE (2026-07-22, whole-text cosine → max-sim recall geçişiyle): max-sim skorları
-# cosine'den yüksek çıkar (en iyi cümle eşleşmesi), eski 0.65 transfer olmaz. Config-5 cevaplarında
-# gözlenen dağılım: bilinen-NEGATİF (inference-engine off-target) = 0.607 | en-düşük-doğru (SDK 0.8.0
-# zengin/kod-bloklu, eski cosine'de 0.516 alıp YANLIŞ sayılıyordu) = 0.656 | net-doğrular 0.79-0.97.
-# 0.63 = negatifi (0.607) eleyip tüm doğruları (≥0.656) geçiren nokta. Not: tek negatifle bant dar
-# (~0.05); soru/negatif seti büyürse yeniden gözden geçirilmeli. Bu geçiş SDK 0.8.0 bias'ını çözdü.
+# Cevap doğruluğu eşiği: answer_similarity bu değerin üstündeyse cevap "doğru" sayılır. 0.63,
+# bilinen yanlış cevapları eleyip doğruları geçiren nokta olarak seçildi. Bant dar olduğu için
+# soru/negatif seti büyürse yeniden kalibre edilmeli.
 SIM_THRESHOLD = 0.63
 
 
@@ -48,9 +43,8 @@ def get_embed_client():
 
 
 def split_sentences(text: str) -> list[str]:
-    """Metni cümlelere böler. Fenced kod blokları (```...```) TEK atomik birim olarak
-    korunur (içindeki noktalardan bölünmez — kod bir 'iddia'dır). Kalan düzyazı cümle
-    sonlarından (. ! ?) ayrılır. Çok kısa parçalar (< 4 char) elenir."""
+    """Metni cümlelere böler. Fenced kod blokları (```...```) tek parça olarak korunur, içindeki
+    noktalardan bölünmez. Düzyazı cümle sonlarından (. ! ?) ayrılır, çok kısa parçalar elenir."""
     parts = re.split(r"(```.*?```)", text, flags=re.DOTALL)
     sentences: list[str] = []
     for part in parts:
@@ -68,17 +62,13 @@ def split_sentences(text: str) -> list[str]:
 
 
 def answer_similarity(embed_client, model_answer: str, reference_answer: str) -> float:
-    """Model cevabının referansı ne kadar KAPSADIĞI — recall-odaklı max-similarity (BERTScore mantığı).
+    """Model cevabının referansı ne kadar kapsadığını ölçer (recall-odaklı, BERTScore mantığı).
 
-    ❌ ESKİ: `cosine(embed(tüm_cevap), embed(referans))` — bütün-metin cosine, ZENGİN cevabı
-    cezalandırıyordu: kod-bloklu/detaylı bir cevabın embedding'i tek vektöre sıkışıp (dilution) terse
-    referanstan uzaklaşıyordu (ör. SDK 0.8.0 kod-bloklu mükemmel cevap 0.516 aldı — yanlış sayıldı).
-
-    ✅ YENİ: referansın her cümlesi için, cevabın cümleleri üzerinde MAX cosine al, ortalamasını dön.
-    "Referansın içeriği cevabın BİR yerinde geçiyor mu?" → zengin cevap en iyi cümlesiyle eşleşir,
-    ekstra cümleler skoru DÜŞÜRMEZ (dilution biter). Endüstri karşılığı: BERTScore-recall / ColBERT MaxSim.
-    Aynı embedding modelini kullanır (yeni bağımlılık yok, deterministik). Precision/uydurma zaten
-    reddetme 8/8 + grounded üretimle güvence altında; bu metrik eksik parçayı (recall) kapatır.
+    Bütün cevabı tek vektöre gömüp referansla karşılaştırmak, kod bloklu/detaylı cevapları haksız
+    yere cezalandırıyordu. Bunun yerine referansın her cümlesi için cevabın cümleleri üzerinde en
+    yüksek benzerliği alıp ortalıyoruz: "referanstaki bilgi cevabın bir yerinde geçiyor mu?". Böylece
+    zengin cevap en iyi cümlesiyle eşleşiyor, fazladan cümleler skoru düşürmüyor. Uydurmayı zaten
+    reddetme disiplini + grounded üretim engelliyor; bu metrik eksik olan recall'ı kapatıyor.
     """
     ans_sentences = split_sentences(model_answer)
     ref_sentences = split_sentences(reference_answer)

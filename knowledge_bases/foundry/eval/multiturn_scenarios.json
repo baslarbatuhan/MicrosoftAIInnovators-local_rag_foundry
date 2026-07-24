@@ -1,0 +1,69 @@
+{
+  "_comment": "Multi-turn değerlendirme senaryoları. Her senaryo sıralı turlardan oluşur; runner geçmişi tur tur biriktirip app.py/CLI ile aynı şekilde answer_query'ye verir. Amaç tek-tur eval'in ölçemediği dört şeyi görmek: coref çözümü retrieval'ı doğru dokümana götürüyor mu, konu değişiminde eski konu sürükleniyor mu, cevabı korpusta olmayan takip sorusunda model reddediyor mu, ve standalone turlar hâlâ doğru çalışıyor mu. expected_source boşsa model reddetmeli; kind sadece raporu gruplamak için.",
+  "scenarios": [
+    {
+      "name": "coref_same_doc",
+      "description": "Takip sorusu ('that') önceki turun konusuna işaret eder, aynı dokümana gitmeli. Canlıda doğrulanan senaryo.",
+      "turns": [
+        {
+          "kind": "standalone",
+          "question": "How do I generate embeddings with Foundry Local?",
+          "expected_source": "how-to__how-to-generate-embeddings.txt"
+        },
+        {
+          "kind": "coref",
+          "question": "Can I do that in JavaScript?",
+          "expected_source": "how-to__how-to-generate-embeddings.txt"
+        }
+      ]
+    },
+    {
+      "name": "coref_diff_doc",
+      "description": "Coref farklı bir dokümana götürmeli — 'it' = Foundry Local; condense LangChain dokümanına yönlendirmeli, tool-calling'de takılı kalmamalı.",
+      "turns": [
+        {
+          "kind": "standalone",
+          "question": "How do I use tool calling with Foundry Local?",
+          "expected_source": "how-to__how-to-use-tool-calling-with-foundry-local.txt"
+        },
+        {
+          "kind": "coref",
+          "question": "Does it work with LangChain?",
+          "expected_source": "how-to__how-to-use-langchain-with-foundry-local.txt"
+        }
+      ]
+    },
+    {
+      "name": "topic_switch",
+      "description": "#4 drift probu: 2. tur kendi içinde tam bağımsız ve YENİ konu. Naif always-condense 'What is Foundry Local tool calling?' gibi eski konuyu yapıştırırsa what-is dokümanını ıskalar.",
+      "turns": [
+        {
+          "kind": "standalone",
+          "question": "How do I use tool calling with Foundry Local?",
+          "expected_source": "how-to__how-to-use-tool-calling-with-foundry-local.txt"
+        },
+        {
+          "kind": "topic_switch",
+          "question": "What is Foundry Local?",
+          "expected_source": "what-is-foundry-local.txt"
+        }
+      ]
+    },
+    {
+      "name": "grounding_refuse",
+      "description": "#1 grounding sızıntısı probu: 2. tur coref ama cevabı dokümanlarda YOK (Foundry Local yerel/ücretsiz; Azure fiyatlandırması korpusta yok). Grounded model reddetmeli. Geçmişten sızdıran/uyduran model fiyat fabrike eder. is_refusal ile otomatik ölçülür.",
+      "turns": [
+        {
+          "kind": "standalone",
+          "question": "How do I generate embeddings with Foundry Local?",
+          "expected_source": "how-to__how-to-generate-embeddings.txt"
+        },
+        {
+          "kind": "unanswerable_coref",
+          "question": "How much does that cost per month on Azure?",
+          "expected_source": ""
+        }
+      ]
+    }
+  ]
+}
